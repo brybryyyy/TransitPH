@@ -11,6 +11,8 @@ public class SessionManager {
     private static final String KEY_FULL_NAME = "fullName";
     private static final String KEY_EMAIL = "email";
     private static final String KEY_ROLE = "role";
+    private static final String KEY_ACCESS_TOKEN = "supabaseAccessToken";
+    private static final String KEY_REMOTE_USER_ID = "supabaseUserId";
     private static final String KEY_SELECTED_LANGUAGE = "selectedLanguage"; // "en", "fil", "bikol"
 
     private final SharedPreferences pref;
@@ -30,6 +32,20 @@ public class SessionManager {
         editor.putString(KEY_EMAIL, user.getEmail());
         editor.putString(KEY_ROLE, user.getRole());
         editor.apply();
+    }
+
+    public void setSupabaseSession(String accessToken, String remoteUserId) {
+        editor.putString(KEY_ACCESS_TOKEN, accessToken);
+        editor.putString(KEY_REMOTE_USER_ID, remoteUserId);
+        editor.apply();
+    }
+
+    public String getAccessToken() {
+        return pref.getString(KEY_ACCESS_TOKEN, "");
+    }
+
+    public String getRemoteUserId() {
+        return pref.getString(KEY_REMOTE_USER_ID, "");
     }
 
     public boolean isLoggedIn() {

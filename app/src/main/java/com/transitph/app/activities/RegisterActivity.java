@@ -51,12 +51,19 @@ public class RegisterActivity extends AppCompatActivity {
         String password = etPassword.getText().toString().trim();
         String confirmPassword = etConfirmPassword.getText().toString().trim();
 
-        AuthenticationService.AuthResult result = authService.register(fullName, email, password, confirmPassword);
-        if (result.isSuccess()) {
-            Toast.makeText(this, "Account created successfully.", Toast.LENGTH_LONG).show();
-            finish();
-        } else {
-            Toast.makeText(this, result.getMessage(), Toast.LENGTH_SHORT).show();
-        }
+        btnRegister.setEnabled(false);
+        new Thread(() -> {
+            AuthenticationService.AuthResult result = authService.register(fullName, email, password, confirmPassword);
+            runOnUiThread(() -> {
+                if (isFinishing() || isDestroyed()) return;
+                btnRegister.setEnabled(true);
+                if (result.isSuccess()) {
+                    Toast.makeText(this, result.getMessage(), Toast.LENGTH_LONG).show();
+                    finish();
+                } else {
+                    Toast.makeText(this, result.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
+        }).start();
     }
 }

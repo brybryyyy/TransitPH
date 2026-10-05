@@ -25,7 +25,7 @@ import com.transitph.app.models.Route;
 import com.transitph.app.models.Terminal;
 import com.transitph.app.utils.SessionManager;
 import org.osmdroid.config.Configuration;
-import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
+import com.transitph.app.map.TomTomTileSource;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
@@ -89,7 +89,7 @@ public class RouteFinderFragment extends Fragment implements RouteAdapter.OnRout
 
         // Initialize Map
         map = view.findViewById(R.id.map_rf);
-        map.setTileSource(TileSourceFactory.MAPNIK);
+        TomTomTileSource.apply(map);   // TomTom tiles
         map.setMultiTouchControls(true);
         map.getController().setZoom(10.0);
         map.getController().setCenter(new GeoPoint(14.2132, 121.1648));

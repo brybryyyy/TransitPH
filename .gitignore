@@ -10,3 +10,5 @@ coverage/
 
 # Project exclude paths
 /.gradle/
+# Local config / API keys (never commit)
+local.properties

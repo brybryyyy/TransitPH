@@ -88,7 +88,9 @@ public class TerminalDetailsActivity extends AppCompatActivity implements RouteA
         rvAvailableRoutes.setAdapter(routeAdapter);
 
         btnNavigate.setOnClickListener(v -> {
-            Toast.makeText(this, "Simulating GPS navigation to " + terminal.getTerminalName() + " (" + terminal.getCoordinatesText() + ")", Toast.LENGTH_LONG).show();
+            Intent mapIntent = new Intent(this, MapActivity.class);
+            mapIntent.putExtra(MapActivity.EXTRA_TERMINAL, terminal);
+            startActivity(mapIntent);
         });
     }
 

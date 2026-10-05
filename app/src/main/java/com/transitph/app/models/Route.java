@@ -18,6 +18,7 @@ public class Route implements Serializable {
     private int transferCount;
     private int walkingDistanceMeters;
     private List<RouteStop> stops = new ArrayList<>();
+    private String timelineJson; // step-by-step instructions stored in Supabase (optional)
 
     public Route() {
         this.transferCount = 1;
@@ -78,6 +79,9 @@ public class Route implements Serializable {
     public List<RouteStop> getStops() { return stops; }
     public void setStops(List<RouteStop> stops) { this.stops = stops; }
 
+    public String getTimelineJson() { return timelineJson; }
+    public void setTimelineJson(String timelineJson) { this.timelineJson = timelineJson; }
+
     public String getFormattedFare() {
         return String.format(java.util.Locale.US, "₱%.2f", fare);
     }
@@ -89,6 +93,8 @@ public class Route implements Serializable {
     public String getTransportIconText() {
         if ("Bus".equalsIgnoreCase(transportType)) return "🚌 BUS";
         if ("Walking".equalsIgnoreCase(transportType)) return "🚶 WALKING";
+        if ("UV Express".equalsIgnoreCase(transportType)) return "🚐 UV EXPRESS";
+        if ("Modern Jeepney".equalsIgnoreCase(transportType)) return "🚐 MODERN JEEPNEY";
         return "🚐 JEEPNEY";
     }
 }

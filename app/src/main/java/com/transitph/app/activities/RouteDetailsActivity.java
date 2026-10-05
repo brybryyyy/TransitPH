@@ -4,7 +4,11 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.ImageButton;
-import android.widget.RadioGroup;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
@@ -33,13 +37,12 @@ public class RouteDetailsActivity extends AppCompatActivity {
     private TextView tvFare;
     private TextView tvTravelTime;
     private TextView tvDescription;
-    private TextView tvStopsSummary;
     private TextView tvWeatherTemp;
     private TextView tvWeatherAdvisoryText;
     private TextView tvSafetyScore;
     private TextView tvSafetyAssessmentText;
     private RecyclerView rvTimeline;
-    private RadioGroup rgLanguage;
+    private Spinner spLanguage;
     private Button btnSaveRoute;
     private Button btnViewOnMap;
     private ImageButton btnBack;
@@ -87,13 +90,12 @@ public class RouteDetailsActivity extends AppCompatActivity {
         tvFare = findViewById(R.id.tv_details_fare);
         tvTravelTime = findViewById(R.id.tv_details_travel_time);
         tvDescription = findViewById(R.id.tv_details_description);
-        tvStopsSummary = findViewById(R.id.tv_details_stops_summary);
         tvWeatherTemp = findViewById(R.id.tv_weather_temp);
         tvWeatherAdvisoryText = findViewById(R.id.tv_weather_advisory_text);
         tvSafetyScore = findViewById(R.id.tv_safety_score);
         tvSafetyAssessmentText = findViewById(R.id.tv_safety_assessment_text);
         rvTimeline = findViewById(R.id.rv_route_timeline);
-        rgLanguage = findViewById(R.id.rg_instruction_language);
+        spLanguage = findViewById(R.id.sp_instruction_language);
         btnSaveRoute = findViewById(R.id.btn_save_route_details);
         btnViewOnMap = findViewById(R.id.btn_view_on_map);
         btnBack = findViewById(R.id.btn_back_details);
@@ -107,56 +109,71 @@ public class RouteDetailsActivity extends AppCompatActivity {
         });
 
         rvTimeline.setLayoutManager(new LinearLayoutManager(this));
+        selectedLanguage = "fil".equalsIgnoreCase(sessionManager.getSelectedLanguage()) ? "fil" : "en";
         timelineSteps = RouteSearchService.generateTimelineSteps(route);
         timelineAdapter = new TimelineAdapter(timelineSteps, selectedLanguage);
         rvTimeline.setAdapter(timelineAdapter);
 
-        rgLanguage.setOnCheckedChangeListener((group, checkedId) -> {
-            if (checkedId == R.id.rb_lang_filipino) {
-                selectedLanguage = "fil";
-            } else {
-                selectedLanguage = "en";
-            }
-            timelineAdapter.updateSteps(timelineSteps, selectedLanguage);
-        });
+        setupLanguageSpinner();
 
         btnSaveRoute.setOnClickListener(v -> handleSaveRoute());
+    }
+
+    private void setupLanguageSpinner() {
+        final String[] labels = {"English", "Filipino"};
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, R.layout.item_language_spinner, labels) {
+            @Override
+            public View getView(int position, View convertView, ViewGroup parent) {
+                TextView v = (TextView) super.getView(position, convertView, parent);
+                v.setText("🌐  " + labels[position] + "  ▾");
+                return v;
+            }
+
+            @Override
+            public View getDropDownView(int position, View convertView, ViewGroup parent) {
+                TextView v = (TextView) super.getView(position, convertView, parent);
+                v.setText(labels[position]);
+                return v;
+            }
+        };
+        spLanguage.setAdapter(adapter);
+        spLanguage.setSelection("fil".equals(selectedLanguage) ? 1 : 0, false);
+
+        spLanguage.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                String lang = (position == 1) ? "fil" : "en";
+                if (!lang.equals(selectedLanguage)) {
+                    selectedLanguage = lang;
+                    sessionManager.setSelectedLanguage(lang);
+                    timelineAdapter.updateSteps(timelineSteps, selectedLanguage);
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
+        });
     }
 
     private void bindRouteData() {
         tvRouteName.setText(route.getRouteName());
         tvTransportType.setText(route.getTransportIconText());
         tvFromTo.setText(route.getOrigin() + " ➔ " + route.getDestination());
-        tvTerminal.setText(route.getTerminalName() != null ? route.getTerminalName() : "Local Terminal");
+        tvTerminal.setText("📍 " + (route.getTerminalName() != null ? route.getTerminalName() : "Local Terminal"));
         tvFare.setText(route.getFormattedFare());
-        tvTravelTime.setText(route.getFormattedTime());
+        tvTravelTime.setText("⏱ " + route.getFormattedTime());
         tvDescription.setText(route.getDescription() != null ? route.getDescription() : "Standard commute route in CALABARZON.");
 
-        if (route.getStops() != null && !route.getStops().isEmpty()) {
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < route.getStops().size(); i++) {
-                RouteStop stop = route.getStops().get(i);
-                sb.append(stop.getSequence()).append(". ").append(stop.getStopName());
-                if (i < route.getStops().size() - 1) sb.append("\n");
-            }
-            tvStopsSummary.setText(sb.toString());
-        } else {
-            tvStopsSummary.setText("Direct transit line with standard street-level request stops.");
-        }
-
-        // Populate Weather Advisory
-        String dest = route.getDestination() != null ? route.getDestination() : "CALABARZON";
-        tvWeatherTemp.setText("29°C | Partly Cloudy in " + dest);
-        tvWeatherAdvisoryText.setText("Humidity: 74%, Wind: 14 km/h. Expected clear roads; light showers possible along outdoor pedestrian overpasses. Keep an umbrella ready.");
-
-        // Populate Safety Assessment
-        tvSafetyScore.setText("Safety: 92/100");
-        tvSafetyAssessmentText.setText("High visibility route. Active transport marshals at terminal departure points and regular municipal street patrol.");
+        // Demo values (not live data yet)
+        tvWeatherTemp.setText("29°C");
+        tvWeatherAdvisoryText.setText("Partly cloudy");
+        tvSafetyScore.setText("92/100");
+        tvSafetyAssessmentText.setText("High visibility route");
 
         // Check if already saved
         long userId = sessionManager.getUserId();
         if (userId > 0 && savedRouteDao.isRouteSaved(userId, route.getId())) {
-            btnSaveRoute.setText("✓ ROUTE ALREADY SAVED");
+            btnSaveRoute.setText("✓ SAVED");
             btnSaveRoute.setEnabled(false);
         }
     }
@@ -170,7 +187,7 @@ public class RouteDetailsActivity extends AppCompatActivity {
 
         if (savedRouteDao.isRouteSaved(userId, route.getId())) {
             Toast.makeText(this, "This route is already saved.", Toast.LENGTH_SHORT).show();
-            btnSaveRoute.setText("✓ ROUTE ALREADY SAVED");
+            btnSaveRoute.setText("✓ SAVED");
             btnSaveRoute.setEnabled(false);
             return;
         }
@@ -178,7 +195,7 @@ public class RouteDetailsActivity extends AppCompatActivity {
         long res = savedRouteDao.saveRoute(userId, route.getId());
         if (res > 0) {
             Toast.makeText(this, "Route saved successfully.", Toast.LENGTH_SHORT).show();
-            btnSaveRoute.setText("✓ ROUTE SAVED");
+            btnSaveRoute.setText("✓ SAVED");
             btnSaveRoute.setEnabled(false);
         } else {
             Toast.makeText(this, "This route is already saved.", Toast.LENGTH_SHORT).show();

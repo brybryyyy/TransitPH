@@ -192,6 +192,12 @@ public class RouteDao {
                 cursor.getInt(cursor.getColumnIndexOrThrow(DatabaseHelper.COL_ROUTE_TIME)),
                 cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COL_ROUTE_DESC))
         );
+        int transfersIdx = cursor.getColumnIndex(DatabaseHelper.COL_ROUTE_TRANSFERS);
+        if (transfersIdx >= 0 && !cursor.isNull(transfersIdx)) r.setTransferCount(cursor.getInt(transfersIdx));
+        int walkIdx = cursor.getColumnIndex(DatabaseHelper.COL_ROUTE_WALK);
+        if (walkIdx >= 0 && !cursor.isNull(walkIdx)) r.setWalkingDistanceMeters(cursor.getInt(walkIdx));
+        int timelineIdx = cursor.getColumnIndex(DatabaseHelper.COL_ROUTE_TIMELINE);
+        if (timelineIdx >= 0 && !cursor.isNull(timelineIdx)) r.setTimelineJson(cursor.getString(timelineIdx));
         int termNameIdx = cursor.getColumnIndex("term_name");
         if (termNameIdx >= 0) {
             r.setTerminalName(cursor.getString(termNameIdx));

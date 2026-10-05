@@ -5,13 +5,16 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import com.transitph.app.models.SavedRoute;
+import com.transitph.app.supabase.SupabaseSync;
 import java.util.ArrayList;
 import java.util.List;
 
 public class SavedRouteDao {
     private final DatabaseHelper dbHelper;
+    private final Context context;
 
     public SavedRouteDao(Context context) {
+        this.context = context.getApplicationContext();
         this.dbHelper = DatabaseHelper.getInstance(context);
     }
 
@@ -72,24 +75,48 @@ public class SavedRouteDao {
         ContentValues cv = new ContentValues();
         cv.put(DatabaseHelper.COL_SAVED_USER_ID, userId);
         cv.put(DatabaseHelper.COL_SAVED_ROUTE_ID, routeId);
-        return db.insert(DatabaseHelper.TABLE_SAVED_ROUTES, null, cv);
+        long newId = db.insert(DatabaseHelper.TABLE_SAVED_ROUTES, null, cv);
+        if (newId > 0) {
+            SupabaseSync.pushSavedRoute(context, newId, routeId); // mirror to Supabase in the background
+        }
+        return newId;
     }
 
     public int deleteSavedRoute(long userId, long routeId) {
+        // read the Supabase ids first, because the local row is about to disappear
+        String remoteSavedId = "";
+        SQLiteDatabase rdb = dbHelper.getReadableDatabase();
+        Cursor c = rdb.query(
+                DatabaseHelper.TABLE_SAVED_ROUTES,
+                new String[]{DatabaseHelper.COL_REMOTE_ID},
+                DatabaseHelper.COL_SAVED_USER_ID + " = ? AND " + DatabaseHelper.COL_SAVED_ROUTE_ID + " = ?",
+                new String[]{String.valueOf(userId), String.valueOf(routeId)},
+                null, null, null);
+        if (c != null) {
+            if (c.moveToFirst() && !c.isNull(0)) remoteSavedId = c.getString(0);
+            c.close();
+        }
+        String remoteRouteId = SupabaseSync.lookupRemoteId(context, DatabaseHelper.TABLE_ROUTES, routeId);
+
         SQLiteDatabase db = dbHelper.getWritableDatabase();
-        return db.delete(
+        int rows = db.delete(
                 DatabaseHelper.TABLE_SAVED_ROUTES,
                 DatabaseHelper.COL_SAVED_USER_ID + " = ? AND " + DatabaseHelper.COL_SAVED_ROUTE_ID + " = ?",
                 new String[]{String.valueOf(userId), String.valueOf(routeId)}
         );
+        if (rows > 0) SupabaseSync.pushDeleteSavedRoute(context, remoteSavedId, remoteRouteId);
+        return rows;
     }
 
     public int deleteSavedRouteById(long savedRouteId) {
+        String remoteSavedId = SupabaseSync.lookupRemoteId(context, DatabaseHelper.TABLE_SAVED_ROUTES, savedRouteId);
         SQLiteDatabase db = dbHelper.getWritableDatabase();
-        return db.delete(
+        int rows = db.delete(
                 DatabaseHelper.TABLE_SAVED_ROUTES,
                 DatabaseHelper.COL_SAVED_ID + " = ?",
                 new String[]{String.valueOf(savedRouteId)}
         );
+        if (rows > 0 && !remoteSavedId.isEmpty()) SupabaseSync.pushDeleteSavedRoute(context, remoteSavedId, "");
+        return rows;
     }
 }

@@ -12,7 +12,7 @@ import java.io.InputStreamReader;
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     public static final String DATABASE_NAME = "transitph.db";
-    public static final int DATABASE_VERSION = 4;
+    public static final int DATABASE_VERSION = 6;
 
     // Table: users
     public static final String TABLE_USERS = "users";
@@ -21,6 +21,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String COL_USER_EMAIL = "email";
     public static final String COL_USER_PASSWORD_HASH = "passwordHash";
     public static final String COL_USER_ROLE = "role"; // USER or ADMIN
+    public static final String COL_REMOTE_ID = "remoteId"; // Supabase id (users, terminals, routes, saved_routes)
 
     // Table: terminals
     public static final String TABLE_TERMINALS = "terminals";
@@ -43,6 +44,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String COL_ROUTE_FARE = "fare";
     public static final String COL_ROUTE_TIME = "estimatedTravelTime";
     public static final String COL_ROUTE_DESC = "description";
+    public static final String COL_ROUTE_TRANSFERS = "transfers";
+    public static final String COL_ROUTE_WALK = "walkingDistanceMeters";
+    public static final String COL_ROUTE_TIMELINE = "timelineJson";
 
     // Table: route_stops
     public static final String TABLE_ROUTE_STOPS = "route_stops";
@@ -125,7 +129,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 COL_USER_FULL_NAME + " TEXT NOT NULL, " +
                 COL_USER_EMAIL + " TEXT UNIQUE NOT NULL, " +
                 COL_USER_PASSWORD_HASH + " TEXT NOT NULL, " +
-                COL_USER_ROLE + " TEXT NOT NULL DEFAULT 'USER');");
+                COL_USER_ROLE + " TEXT NOT NULL DEFAULT 'USER', " +
+                COL_REMOTE_ID + " TEXT);");
 
         // Create Terminals Table
         db.execSQL("CREATE TABLE " + TABLE_TERMINALS + " (" +
@@ -135,7 +140,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 COL_TERM_PROVINCE + " TEXT NOT NULL, " +
                 COL_TERM_LAT + " REAL NOT NULL, " +
                 COL_TERM_LNG + " REAL NOT NULL, " +
-                COL_TERM_DESC + " TEXT);");
+                COL_TERM_DESC + " TEXT, " +
+                COL_REMOTE_ID + " TEXT);");
 
         // Create Routes Table
         db.execSQL("CREATE TABLE " + TABLE_ROUTES + " (" +
@@ -148,6 +154,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 COL_ROUTE_FARE + " REAL NOT NULL, " +
                 COL_ROUTE_TIME + " INTEGER NOT NULL, " +
                 COL_ROUTE_DESC + " TEXT, " +
+                COL_ROUTE_TRANSFERS + " INTEGER, " +
+                COL_ROUTE_WALK + " INTEGER, " +
+                COL_ROUTE_TIMELINE + " TEXT, " +
+                COL_REMOTE_ID + " TEXT, " +
                 "FOREIGN KEY (" + COL_ROUTE_TERM_ID + ") REFERENCES " + TABLE_TERMINALS + "(" + COL_TERM_ID + ") ON DELETE CASCADE);");
 
         // Create Route Stops Table
@@ -165,6 +175,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 COL_SAVED_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
                 COL_SAVED_USER_ID + " INTEGER NOT NULL, " +
                 COL_SAVED_ROUTE_ID + " INTEGER NOT NULL, " +
+                COL_REMOTE_ID + " TEXT, " +
                 "UNIQUE(" + COL_SAVED_USER_ID + ", " + COL_SAVED_ROUTE_ID + "), " +
                 "FOREIGN KEY (" + COL_SAVED_USER_ID + ") REFERENCES " + TABLE_USERS + "(" + COL_USER_ID + ") ON DELETE CASCADE, " +
                 "FOREIGN KEY (" + COL_SAVED_ROUTE_ID + ") REFERENCES " + TABLE_ROUTES + "(" + COL_ROUTE_ID + ") ON DELETE CASCADE);");

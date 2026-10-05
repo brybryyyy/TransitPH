@@ -74,7 +74,7 @@ public class TimelineAdapter extends RecyclerView.Adapter<TimelineAdapter.Timeli
             else if ("ARRIVE".equalsIgnoreCase(step.getIconType())) icon = "🎯";
 
             tvStepIcon.setText(icon);
-            tvStepTitle.setText(step.getTitle());
+            tvStepTitle.setText(step.getTitle(lang));
             tvStepInstruction.setText(step.getInstruction(lang));
             tvStepMeta.setText(step.getTimeOrDistance());
 

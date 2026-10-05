@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.transitph.app.R;
 import com.transitph.app.adapters.RouteAdapter;
+import com.transitph.app.map.RouteMapHelper;
 import com.transitph.app.database.RouteDao;
 import com.transitph.app.database.SavedRouteDao;
 import com.transitph.app.database.TerminalDao;
@@ -24,7 +25,7 @@ import com.transitph.app.models.Terminal;
 import com.transitph.app.utils.SessionManager;
 
 import org.osmdroid.config.Configuration;
-import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
+import com.transitph.app.map.TomTomTileSource;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
@@ -83,7 +84,7 @@ public class RouteResultsActivity extends AppCompatActivity implements RouteAdap
         btnBack = findViewById(R.id.btn_back_results);
 
         map = findViewById(R.id.map_results);
-        map.setTileSource(TileSourceFactory.MAPNIK);
+        TomTomTileSource.apply(map);   // TomTom tiles
         map.setMultiTouchControls(true);
 
         btnBack.setOnClickListener(v -> finish());
@@ -151,83 +152,12 @@ public class RouteResultsActivity extends AppCompatActivity implements RouteAdap
 
     private void drawRouteOnMap(Route route) {
         if (map == null) return;
-        map.getOverlays().clear();
-
-        List<GeoPoint> points = new ArrayList<>();
-        Terminal terminal = terminalDao.getTerminalById(route.getTerminalId());
-
-        if (terminal != null && terminal.getLatitude() != 0) {
-            GeoPoint startPoint = new GeoPoint(terminal.getLatitude(), terminal.getLongitude());
-            points.add(startPoint);
-
-            Marker startMarker = new Marker(map);
-            startMarker.setPosition(startPoint);
-            startMarker.setTitle("START: " + terminal.getTerminalName());
-            startMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-            
-            android.graphics.drawable.Drawable icon = ContextCompat.getDrawable(this, android.R.drawable.ic_dialog_map);
-            if (icon != null) {
-                icon = DrawableCompat.wrap(icon);
-                DrawableCompat.setTint(icon, Color.GREEN);
-                startMarker.setIcon(icon);
+        // Road-following route (TomTom). Drawing logic lives in map/RouteMapHelper.java
+        RouteMapHelper.drawRoute(this, map, route, (meters, seconds, roadAccurate, note) -> {
+            if (!roadAccurate && note != null) {
+                Toast.makeText(this, note, Toast.LENGTH_LONG).show();
             }
-            map.getOverlays().add(startMarker);
-        }
-
-        List<RouteStop> stops = route.getStops();
-        if (stops != null && !stops.isEmpty()) {
-            for (RouteStop stop : stops) {
-                if (stop.getLatitude() != 0) {
-                    GeoPoint stopPoint = new GeoPoint(stop.getLatitude(), stop.getLongitude());
-                    points.add(stopPoint);
-
-                    Marker stopMarker = new Marker(map);
-                    stopMarker.setPosition(stopPoint);
-                    stopMarker.setTitle(stop.getStopName());
-                    stopMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
-                    
-                    android.graphics.drawable.GradientDrawable circle = new android.graphics.drawable.GradientDrawable();
-                    circle.setShape(android.graphics.drawable.GradientDrawable.OVAL);
-                    circle.setColor(Color.BLUE);
-                    circle.setSize(24, 24);
-                    circle.setBounds(0, 0, 24, 24);
-                    stopMarker.setIcon(circle);
-
-                    map.getOverlays().add(stopMarker);
-                }
-            }
-        }
-
-        if (points.size() >= 2) {
-            Polyline line = new Polyline();
-            line.setPoints(points);
-            line.setColor(Color.BLUE);
-            line.setWidth(8.0f);
-            map.getOverlays().add(line);
-
-            // Finish marker
-            GeoPoint endPoint = points.get(points.size() - 1);
-            Marker endMarker = new Marker(map);
-            endMarker.setPosition(endPoint);
-            endMarker.setTitle("FINISH");
-            endMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-            
-            android.graphics.drawable.Drawable icon = ContextCompat.getDrawable(this, android.R.drawable.ic_dialog_map);
-            if (icon != null) {
-                icon = DrawableCompat.wrap(icon);
-                DrawableCompat.setTint(icon, Color.RED);
-                endMarker.setIcon(icon);
-            }
-            map.getOverlays().add(endMarker);
-
-            map.getController().animateTo(points.get(0));
-            map.getController().setZoom(13.0);
-        } else if (!points.isEmpty()) {
-            map.getController().animateTo(points.get(0));
-            map.getController().setZoom(15.0);
-        }
-
-        map.invalidate();
+        });
     }
 
     @Override

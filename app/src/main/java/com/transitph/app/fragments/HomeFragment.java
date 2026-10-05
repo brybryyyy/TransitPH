@@ -26,7 +26,7 @@ import com.transitph.app.models.Terminal;
 import com.transitph.app.utils.SessionManager;
 
 import org.osmdroid.config.Configuration;
-import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
+import com.transitph.app.map.TomTomTileSource;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.overlay.Marker;
 
@@ -101,7 +101,7 @@ public class HomeFragment extends Fragment implements SavedRouteAdapter.OnSavedR
 
         map = view.findViewById(R.id.map_home);
         if (map != null) {
-            map.setTileSource(TileSourceFactory.MAPNIK);
+            TomTomTileSource.apply(map);   // TomTom tiles
             map.setMultiTouchControls(true);
             GeoPoint startPoint = new GeoPoint(14.2132, 121.1648);
             map.getController().setZoom(10.0);

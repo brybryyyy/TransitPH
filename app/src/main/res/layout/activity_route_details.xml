@@ -19,7 +19,7 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:padding="16dp">
+            android:padding="12dp">
 
             <ImageButton
                 android:id="@+id/btn_back_details"
@@ -37,7 +37,7 @@
                 android:layout_marginStart="8dp"
                 android:text="Route Details"
                 android:textColor="@color/text_primary"
-                android:textSize="18sp"
+                android:textSize="17sp"
                 android:textStyle="bold"
                 android:ellipsize="end"
                 android:maxLines="1" />
@@ -102,166 +102,162 @@
                             android:layout_height="wrap_content"
                             android:text="₱30.00"
                             android:textColor="@color/primary"
-                            android:textSize="20sp"
+                            android:textSize="22sp"
                             android:textStyle="bold" />
                     </LinearLayout>
 
                     <TextView
                         android:id="@+id/tv_details_from_to"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
+                        android:layout_marginTop="10dp"
                         android:text="Calamba Crossing ➔ Santa Rosa"
                         android:textColor="@color/text_primary"
                         android:textSize="17sp"
                         android:textStyle="bold" />
 
-                    <TextView
-                        android:id="@+id/tv_details_terminal"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="📍 Calamba Central Terminal"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="14sp" />
-
-                    <TextView
-                        android:id="@+id/tv_details_travel_time"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="⏱ Estimated Duration: 45 mins"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="14sp" />
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:layout_marginVertical="12dp"
-                        android:background="@color/divider" />
-
-                    <TextView
-                        android:id="@+id/tv_details_description"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Direct route via National Highway."
-                        android:textColor="@color/text_secondary"
-                        android:textSize="14sp"
-                        android:lineSpacingMultiplier="1.2" />
-
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
-
-            <!-- Route Weather Advisory Card -->
-            <androidx.cardview.widget.CardView
-                android:id="@+id/card_weather_advisory"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                app:cardCornerRadius="14dp"
-                app:cardElevation="1dp"
-                app:cardBackgroundColor="#F0F9FF">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="14dp">
-
+                    <!-- Terminal + duration on one line -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
                         android:orientation="horizontal"
                         android:gravity="center_vertical">
 
                         <TextView
+                            android:id="@+id/tv_details_terminal"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="⛅ Route Weather Advisory"
+                            android:text="📍 Calamba Central Terminal"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="13sp"
+                            android:maxLines="1"
+                            android:ellipsize="end" />
+
+                        <TextView
+                            android:id="@+id/tv_details_travel_time"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:text="⏱ 45 min"
+                            android:textColor="@color/text_primary"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tv_details_description"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="Direct route via National Highway."
+                        android:textColor="@color/text_muted"
+                        android:textSize="12sp"
+                        android:maxLines="2"
+                        android:ellipsize="end" />
+
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Weather + Safety as two compact tiles -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="horizontal"
+                android:baselineAligned="false">
+
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/card_weather_advisory"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="1dp"
+                    app:cardBackgroundColor="#ECFDF5">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="12dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="⛅ WEATHER"
                             android:textColor="@color/primary_dark"
-                            android:textSize="14sp"
+                            android:textSize="10sp"
                             android:textStyle="bold" />
 
                         <TextView
                             android:id="@+id/tv_weather_temp"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="29°C | Partly Cloudy"
+                            android:layout_marginTop="2dp"
+                            android:text="29°C"
                             android:textColor="@color/primary_dark"
-                            android:textSize="12sp"
+                            android:textSize="20sp"
                             android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tv_weather_advisory_text"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Partly cloudy"
+                            android:textColor="@color/primary_dark"
+                            android:textSize="11sp" />
                     </LinearLayout>
+                </androidx.cardview.widget.CardView>
 
-                    <TextView
-                        android:id="@+id/tv_weather_advisory_text"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="Moderate humidity (75%), 20% precipitation chance. Safe for outdoor transfers; keep an umbrella handy."
-                        android:textColor="@color/primary_dark"
-                        android:textSize="12sp" />
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
-
-            <!-- Commuter Safety Assessment Card -->
-            <androidx.cardview.widget.CardView
-                android:id="@+id/card_safety_assessment"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                app:cardCornerRadius="14dp"
-                app:cardElevation="1dp"
-                app:cardBackgroundColor="@color/surface">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="14dp">
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/card_safety_assessment"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:layout_marginStart="6dp"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="1dp"
+                    app:cardBackgroundColor="@color/surface">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical">
+                        android:orientation="vertical"
+                        android:padding="12dp">
 
                         <TextView
-                            android:layout_width="0dp"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="🛡️ Corridor Safety Rating"
-                            android:textColor="@color/text_primary"
-                            android:textSize="14sp"
+                            android:text="🛡️ SAFETY"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="10sp"
                             android:textStyle="bold" />
 
                         <TextView
                             android:id="@+id/tv_safety_score"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:background="@drawable/badge_rounded_primary"
-                            android:paddingStart="8dp"
-                            android:paddingTop="2dp"
-                            android:paddingEnd="8dp"
-                            android:paddingBottom="2dp"
-                            android:text="Safety: 90/100"
-                            android:textColor="@color/primary_dark"
-                            android:textSize="11sp"
+                            android:layout_marginTop="2dp"
+                            android:text="92/100"
+                            android:textColor="@color/success"
+                            android:textSize="20sp"
                             android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tv_safety_assessment_text"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="High visibility route"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="11sp" />
                     </LinearLayout>
+                </androidx.cardview.widget.CardView>
+            </LinearLayout>
 
-                    <TextView
-                        android:id="@+id/tv_safety_assessment_text"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="Well-lit public corridors, active marshals at terminal departure bays, regular commuter traffic."
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
-
-            <!-- Language Switcher for Instructions -->
+            <!-- Timeline header with language dropdown -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -273,32 +269,19 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="STEP-BY-STEP TIMELINE"
+                    android:text="STEP-BY-STEP"
                     android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:textStyle="bold" />
 
-                <RadioGroup
-                    android:id="@+id/rg_instruction_language"
+                <Spinner
+                    android:id="@+id/sp_instruction_language"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-
-                    <RadioButton
-                        android:id="@+id/rb_lang_english"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="EN"
-                        android:checked="true"
-                        android:textSize="12sp" />
-
-                    <RadioButton
-                        android:id="@+id/rb_lang_filipino"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="FIL"
-                        android:textSize="12sp" />
-                </RadioGroup>
+                    android:layout_height="40dp"
+                    android:minWidth="130dp"
+                    android:background="@drawable/bg_spinner"
+                    android:spinnerMode="dropdown"
+                    android:popupBackground="@color/surface" />
             </LinearLayout>
 
             <!-- Timeline RecyclerView -->
@@ -306,50 +289,14 @@
                 android:id="@+id/rv_route_timeline"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="8dp"
                 android:nestedScrollingEnabled="false" />
-
-            <!-- Route Stops Card -->
-            <androidx.cardview.widget.CardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:layout_marginBottom="24dp"
-                app:cardCornerRadius="14dp"
-                app:cardElevation="2dp"
-                app:cardBackgroundColor="@color/surface">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="INTERMEDIATE WAYPOINTS &amp; STOPS"
-                        android:textColor="@color/text_primary"
-                        android:textSize="13sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/tv_details_stops_summary"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="1. Calamba Crossing\n2. Turbina / Real\n3. Cabuyao Bayan\n4. Balibago Commercial Complex"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="14sp"
-                        android:lineSpacingMultiplier="1.3" />
-
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
 
         </LinearLayout>
     </ScrollView>
 
-    <!-- Bottom Action Bar -->
+    <!-- Bottom Action Bar: two buttons side by side -->
     <androidx.cardview.widget.CardView
         android:id="@+id/card_bottom_actions"
         android:layout_width="match_parent"
@@ -361,30 +308,33 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
+            android:orientation="horizontal"
             android:padding="12dp">
 
             <Button
                 android:id="@+id/btn_view_on_map"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:layout_width="match_parent"
-                android:layout_height="50dp"
-                android:layout_marginBottom="8dp"
-                android:text="🗺️ VIEW ON TRANSIT MAP"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="6dp"
+                android:text="🗺️ VIEW MAP"
                 android:textColor="@color/primary"
-                android:textSize="15sp"
+                android:textSize="14sp"
                 android:textStyle="bold"
                 app:strokeColor="@color/primary"
                 app:strokeWidth="2dp" />
 
             <Button
                 android:id="@+id/btn_save_route_details"
-                android:layout_width="match_parent"
-                android:layout_height="50dp"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
                 android:backgroundTint="@color/primary"
-                android:text="★ SAVE ROUTE TO MY SAVED LIST"
+                android:text="★ SAVE ROUTE"
                 android:textColor="@color/surface"
-                android:textSize="15sp"
+                android:textSize="14sp"
                 android:textStyle="bold" />
 
         </LinearLayout>

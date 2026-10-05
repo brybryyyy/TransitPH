@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Brand Primary Colors -->
-    <color name="primary">#0284C7</color>
-    <color name="primary_dark">#0369A1</color>
-    <color name="primary_light">#E0F2FE</color>
-    <color name="accent">#0EA5E9</color>
+    <!-- Brand Primary Colors (emerald, matches the web UI) -->
+    <color name="primary">#059669</color>
+    <color name="primary_dark">#065F46</color>
+    <color name="primary_light">#D1FAE5</color>
+    <color name="accent">#10B981</color>
     
     <!-- Secondary & Transport Modes -->
     <color name="jeepney_color">#D97706</color>

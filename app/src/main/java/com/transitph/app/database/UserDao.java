@@ -89,4 +89,36 @@ public class UserDao {
         }
         return user;
     }
+
+    /**
+     * Creates or updates the local mirror of a Supabase user and returns its local id.
+     * Passwords are managed by Supabase, so no real password hash is stored here.
+     */
+    public long upsertRemoteUser(String remoteId, String fullName, String email, String role) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues cv = new ContentValues();
+        cv.put(DatabaseHelper.COL_USER_FULL_NAME, fullName);
+        cv.put(DatabaseHelper.COL_USER_EMAIL, email.trim().toLowerCase());
+        cv.put(DatabaseHelper.COL_USER_ROLE, (role == null || role.isEmpty()) ? "USER" : role.toUpperCase());
+        cv.put(DatabaseHelper.COL_REMOTE_ID, remoteId);
+
+        Cursor cursor = db.query(
+                DatabaseHelper.TABLE_USERS,
+                new String[]{DatabaseHelper.COL_USER_ID},
+                DatabaseHelper.COL_REMOTE_ID + " = ? OR " + DatabaseHelper.COL_USER_EMAIL + " = ? COLLATE NOCASE",
+                new String[]{remoteId, email.trim()},
+                null, null, null
+        );
+        long id = -1;
+        if (cursor != null) {
+            if (cursor.moveToFirst()) id = cursor.getLong(0);
+            cursor.close();
+        }
+        if (id > 0) {
+            db.update(DatabaseHelper.TABLE_USERS, cv, DatabaseHelper.COL_USER_ID + " = ?", new String[]{String.valueOf(id)});
+            return id;
+        }
+        cv.put(DatabaseHelper.COL_USER_PASSWORD_HASH, "managed-by-supabase");
+        return db.insert(DatabaseHelper.TABLE_USERS, null, cv);
+    }
 }
