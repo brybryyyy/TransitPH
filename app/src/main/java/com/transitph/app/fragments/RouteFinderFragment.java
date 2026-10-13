@@ -25,6 +25,7 @@ import com.transitph.app.models.Route;
 import com.transitph.app.models.Terminal;
 import com.transitph.app.utils.SessionManager;
 import org.osmdroid.config.Configuration;
+import com.transitph.app.map.TerminalMarkers;
 import com.transitph.app.map.TomTomTileSource;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
@@ -94,16 +95,9 @@ public class RouteFinderFragment extends Fragment implements RouteAdapter.OnRout
         map.getController().setZoom(10.0);
         map.getController().setCenter(new GeoPoint(14.2132, 121.1648));
 
-        // Plot terminals
+        // Plot terminals: only those with routes and real coordinates (small orange dots)
         List<Terminal> terminals = terminalDao.getAllTerminals();
-        for (Terminal t : terminals) {
-            Marker marker = new Marker(map);
-            marker.setPosition(new GeoPoint(t.getLatitude(), t.getLongitude()));
-            marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-            marker.setTitle(t.getTerminalName());
-            marker.setSnippet(t.getDescription());
-            map.getOverlays().add(marker);
-        }
+        TerminalMarkers.addTo(map, terminals);
     }
 
     private void setupListeners() {

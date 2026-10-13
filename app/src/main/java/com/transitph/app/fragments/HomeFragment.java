@@ -26,6 +26,7 @@ import com.transitph.app.models.Terminal;
 import com.transitph.app.utils.SessionManager;
 
 import org.osmdroid.config.Configuration;
+import com.transitph.app.map.TerminalMarkers;
 import com.transitph.app.map.TomTomTileSource;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.overlay.Marker;
@@ -202,18 +203,10 @@ public class HomeFragment extends Fragment implements SavedRouteAdapter.OnSavedR
     }
 
     private void plotTerminals() {
+        // Only terminals that have routes and real coordinates are drawn (small orange dots).
+        // The terminals imported from terminals.csv have placeholder coordinates, some of them in the sea.
         List<Terminal> terminals = terminalDao.getAllTerminals();
-        for (Terminal t : terminals) {
-            if (t.getLatitude() != 0 && t.getLongitude() != 0) {
-                Marker marker = new Marker(map);
-                marker.setPosition(new GeoPoint(t.getLatitude(), t.getLongitude()));
-                marker.setTitle(t.getTerminalName());
-                marker.setSnippet(t.getCity() + ", " + t.getProvince() + "\n" + t.getRouteCount() + " Routes");
-                marker.setIcon(getResources().getDrawable(android.R.drawable.ic_dialog_map));
-                map.getOverlays().add(marker);
-            }
-        }
-        map.invalidate();
+        TerminalMarkers.addTo(map, terminals);
     }
 
     private void loadSavedRoutesPreview() {
