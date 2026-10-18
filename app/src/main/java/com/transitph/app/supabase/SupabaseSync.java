@@ -32,8 +32,10 @@ public final class SupabaseSync {
     // ------------------------------------------------------------------ pull
 
     /**
-     * Downloads terminals + routes (and the signed-in user's saved routes) and replaces the local copy.
-     * Returns true when the local database now mirrors Supabase. The local data is left untouched
+     * Downloads terminals + routes (and the signed-in user's saved routes) and merges them into the local copy.
+     * Existing local-only routes and terminals are retained. Existing terminal coordinates are kept
+     * so a Supabase refresh does not move established map markers.
+     * Returns true when usable Supabase rows were merged. The local data is left untouched
      * if anything fails (no internet, empty tables, ...), so the app keeps working offline.
      */
     public static boolean pullAll(Context context) {
@@ -79,11 +81,6 @@ public final class SupabaseSync {
             SQLiteDatabase db = DatabaseHelper.getInstance(app).getWritableDatabase();
             db.beginTransaction();
             try {
-                db.delete(DatabaseHelper.TABLE_ROUTE_STOPS, null, null);
-                db.delete(DatabaseHelper.TABLE_SAVED_ROUTES, null, null);
-                db.delete(DatabaseHelper.TABLE_ROUTES, null, null);
-                db.delete(DatabaseHelper.TABLE_TERMINALS, null, null);
-
                 int importedTerminals = 0;
                 int importedRoutes = 0;
                 Map<String, Long> terminalIds = new HashMap<>();
@@ -91,15 +88,32 @@ public final class SupabaseSync {
                     if (!el.isJsonObject()) continue;
                     JsonObject t = el.getAsJsonObject();
                     String remoteId = SupabaseClient.str(t, "", "id");
-                    ContentValues cv = new ContentValues();
-                    cv.put(DatabaseHelper.COL_TERM_NAME, SupabaseClient.str(t, "Unnamed terminal", "name", "terminalName"));
-                    cv.put(DatabaseHelper.COL_TERM_CITY, SupabaseClient.str(t, "", "city"));
-                    cv.put(DatabaseHelper.COL_TERM_PROVINCE, SupabaseClient.str(t, "", "province"));
-                    cv.put(DatabaseHelper.COL_TERM_LAT, SupabaseClient.num(t, 0, "latitude", "lat"));
-                    cv.put(DatabaseHelper.COL_TERM_LNG, SupabaseClient.num(t, 0, "longitude", "lng"));
-                    cv.put(DatabaseHelper.COL_TERM_DESC, SupabaseClient.str(t, "", "description"));
-                    cv.put(DatabaseHelper.COL_REMOTE_ID, remoteId);
-                    long localId = db.insert(DatabaseHelper.TABLE_TERMINALS, null, cv);
+                    String name = SupabaseClient.str(t, "Unnamed terminal", "name", "terminalName");
+                    String city = SupabaseClient.str(t, "", "city");
+                    String province = SupabaseClient.str(t, "", "province");
+                    long localId = findTerminalByRemoteId(db, remoteId);
+                    if (localId <= 0) localId = findTerminalByIdentity(db, name, city, province);
+                    if (localId > 0) {
+                        // Attach the remote ID, but deliberately keep the existing terminal fields
+                        // (especially latitude/longitude) so the user's current map pins stay put.
+                        if (!remoteId.isEmpty()) {
+                            ContentValues idValues = new ContentValues();
+                            idValues.put(DatabaseHelper.COL_REMOTE_ID, remoteId);
+                            db.update(DatabaseHelper.TABLE_TERMINALS, idValues,
+                                    DatabaseHelper.COL_TERM_ID + " = ? AND (" + DatabaseHelper.COL_REMOTE_ID + " IS NULL OR " + DatabaseHelper.COL_REMOTE_ID + " = '')",
+                                    new String[]{String.valueOf(localId)});
+                        }
+                    } else {
+                        ContentValues cv = new ContentValues();
+                        cv.put(DatabaseHelper.COL_TERM_NAME, name);
+                        cv.put(DatabaseHelper.COL_TERM_CITY, city);
+                        cv.put(DatabaseHelper.COL_TERM_PROVINCE, province);
+                        cv.put(DatabaseHelper.COL_TERM_LAT, SupabaseClient.num(t, 0, "latitude", "lat"));
+                        cv.put(DatabaseHelper.COL_TERM_LNG, SupabaseClient.num(t, 0, "longitude", "lng"));
+                        cv.put(DatabaseHelper.COL_TERM_DESC, SupabaseClient.str(t, "", "description"));
+                        cv.put(DatabaseHelper.COL_REMOTE_ID, remoteId);
+                        localId = db.insert(DatabaseHelper.TABLE_TERMINALS, null, cv);
+                    }
                     if (localId > 0) {
                         terminalIds.put(remoteId, localId);
                         importedTerminals++;
@@ -129,19 +143,39 @@ public final class SupabaseSync {
                         cv.put(DatabaseHelper.COL_ROUTE_TIMELINE, r.get("timeline").toString());
                     }
                     cv.put(DatabaseHelper.COL_REMOTE_ID, remoteId);
-                    long localRoute = db.insert(DatabaseHelper.TABLE_ROUTES, null, cv);
+                    long localRoute = findRouteByRemoteId(db, remoteId);
+                    if (localRoute > 0) {
+                        // Refresh the remote-backed row in place; local-only routes are not touched.
+                        db.update(DatabaseHelper.TABLE_ROUTES, cv, DatabaseHelper.COL_ROUTE_ID + " = ?",
+                                new String[]{String.valueOf(localRoute)});
+                    } else {
+                        localRoute = findRouteByIdentity(db, localTerminal,
+                                SupabaseClient.str(r, "Route", "name", "routeName"),
+                                SupabaseClient.str(r, "", "origin"),
+                                SupabaseClient.str(r, "", "destination"),
+                                SupabaseClient.str(r, "Jeepney", "transportType"));
+                        if (localRoute > 0) {
+                            cv.put(DatabaseHelper.COL_REMOTE_ID, remoteId);
+                            db.update(DatabaseHelper.TABLE_ROUTES, cv, DatabaseHelper.COL_ROUTE_ID + " = ?",
+                                    new String[]{String.valueOf(localRoute)});
+                        } else {
+                            localRoute = db.insert(DatabaseHelper.TABLE_ROUTES, null, cv);
+                        }
+                    }
                     if (localRoute <= 0) continue;
                     routeIds.put(remoteId, localRoute);
                     importedRoutes++;
 
-                    // stops: Supabase stores plain names. Coordinates stay 0 -> TomTom geocodes the names.
+                    // Merge stop names without clearing existing route stops.
                     if (r.has("stops") && r.get("stops").isJsonArray()) {
-                        int seq = 1;
+                        int seq = nextStopSequence(db, localRoute);
                         for (JsonElement stop : r.getAsJsonArray("stops")) {
                             if (!stop.isJsonPrimitive()) continue;
+                            String stopName = stop.getAsString();
+                            if (hasStop(db, localRoute, stopName)) continue;
                             ContentValues sv = new ContentValues();
                             sv.put(DatabaseHelper.COL_STOP_ROUTE_ID, localRoute);
-                            sv.put(DatabaseHelper.COL_STOP_NAME, stop.getAsString());
+                            sv.put(DatabaseHelper.COL_STOP_NAME, stopName);
                             sv.put(DatabaseHelper.COL_STOP_SEQUENCE, seq++);
                             sv.put(DatabaseHelper.COL_STOP_LAT, 0.0);
                             sv.put(DatabaseHelper.COL_STOP_LNG, 0.0);
@@ -152,7 +186,7 @@ public final class SupabaseSync {
 
                 Log.i(TAG, "Imported " + importedTerminals + " terminals and " + importedRoutes + " routes");
                 if (importedTerminals == 0 || importedRoutes == 0) {
-                    // Rows did not match what the app expects (ids / columns). Keep the existing local data.
+                    // Rows did not match what the app expects (ids / columns). Roll back this merge.
                     Log.w(TAG, "Nothing usable imported - keeping local data (rollback)");
                     return false;
                 }
@@ -175,8 +209,53 @@ public final class SupabaseSync {
             } finally {
                 db.endTransaction();
             }
+            // Supabase may contain terminals added after the bundled CSV was created.
+            // Add an estimated connector only for any such terminal that still has no routes.
+            DatabaseHelper.getInstance(app).ensureEstimatedRouteCoverage();
             return true;
         }
+    }
+
+    private static long findTerminalByRemoteId(SQLiteDatabase db, String remoteId) {
+        if (remoteId == null || remoteId.isEmpty()) return -1;
+        Cursor c = db.query(DatabaseHelper.TABLE_TERMINALS, new String[]{DatabaseHelper.COL_TERM_ID},
+                DatabaseHelper.COL_REMOTE_ID + " = ?", new String[]{remoteId}, null, null, null, "1");
+        try { return c.moveToFirst() ? c.getLong(0) : -1; } finally { c.close(); }
+    }
+
+    private static long findTerminalByIdentity(SQLiteDatabase db, String name, String city, String province) {
+        Cursor c = db.query(DatabaseHelper.TABLE_TERMINALS, new String[]{DatabaseHelper.COL_TERM_ID},
+                "lower(trim(" + DatabaseHelper.COL_TERM_NAME + ")) = lower(trim(?)) AND lower(trim(" + DatabaseHelper.COL_TERM_CITY + ")) = lower(trim(?)) AND lower(trim(" + DatabaseHelper.COL_TERM_PROVINCE + ")) = lower(trim(?))",
+                new String[]{name, city, province}, null, null, null, "1");
+        try { return c.moveToFirst() ? c.getLong(0) : -1; } finally { c.close(); }
+    }
+
+    private static long findRouteByRemoteId(SQLiteDatabase db, String remoteId) {
+        if (remoteId == null || remoteId.isEmpty()) return -1;
+        Cursor c = db.query(DatabaseHelper.TABLE_ROUTES, new String[]{DatabaseHelper.COL_ROUTE_ID},
+                DatabaseHelper.COL_REMOTE_ID + " = ?", new String[]{remoteId}, null, null, null, "1");
+        try { return c.moveToFirst() ? c.getLong(0) : -1; } finally { c.close(); }
+    }
+
+    private static long findRouteByIdentity(SQLiteDatabase db, long terminalId, String name, String origin, String destination, String type) {
+        Cursor c = db.query(DatabaseHelper.TABLE_ROUTES, new String[]{DatabaseHelper.COL_ROUTE_ID},
+                DatabaseHelper.COL_ROUTE_TERM_ID + " = ? AND lower(trim(" + DatabaseHelper.COL_ROUTE_NAME + ")) = lower(trim(?)) AND lower(trim(" + DatabaseHelper.COL_ROUTE_ORIGIN + ")) = lower(trim(?)) AND lower(trim(" + DatabaseHelper.COL_ROUTE_DESTINATION + ")) = lower(trim(?)) AND lower(trim(" + DatabaseHelper.COL_ROUTE_TRANSPORT_TYPE + ")) = lower(trim(?))",
+                new String[]{String.valueOf(terminalId), name, origin, destination, type}, null, null, null, "1");
+        try { return c.moveToFirst() ? c.getLong(0) : -1; } finally { c.close(); }
+    }
+
+    private static boolean hasStop(SQLiteDatabase db, long routeId, String stopName) {
+        Cursor c = db.query(DatabaseHelper.TABLE_ROUTE_STOPS, new String[]{DatabaseHelper.COL_STOP_ID},
+                DatabaseHelper.COL_STOP_ROUTE_ID + " = ? AND lower(trim(" + DatabaseHelper.COL_STOP_NAME + ")) = lower(trim(?))",
+                new String[]{String.valueOf(routeId), stopName}, null, null, null, "1");
+        try { return c.moveToFirst(); } finally { c.close(); }
+    }
+
+    private static int nextStopSequence(SQLiteDatabase db, long routeId) {
+        Cursor c = db.rawQuery("SELECT COALESCE(MAX(" + DatabaseHelper.COL_STOP_SEQUENCE + "), 0) + 1 FROM " +
+                DatabaseHelper.TABLE_ROUTE_STOPS + " WHERE " + DatabaseHelper.COL_STOP_ROUTE_ID + " = ?",
+                new String[]{String.valueOf(routeId)});
+        try { return c.moveToFirst() ? c.getInt(0) : 1; } finally { c.close(); }
     }
 
     // ------------------------------------------------------------------ push (saved routes)

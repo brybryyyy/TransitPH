@@ -147,11 +147,28 @@
                 android:textSize="14sp"
                 android:textStyle="bold" />
 
-            <androidx.recyclerview.widget.RecyclerView
+            <HorizontalScrollView
+                android:id="@+id/scroll_td_transport_filters"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:scrollbars="none">
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chips_td_transport_filters"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:chipSpacingHorizontal="4dp"
+                    app:singleLine="true"
+                    app:singleSelection="true"
+                    app:selectionRequired="true" />
+            </HorizontalScrollView>
+
+            <LinearLayout
                 android:id="@+id/rv_terminal_routes"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:nestedScrollingEnabled="false" />
+                android:orientation="vertical" />
 
             <LinearLayout
                 android:id="@+id/layout_td_no_routes"
@@ -163,6 +180,7 @@
                 android:visibility="gone">
 
                 <TextView
+                    android:id="@+id/tv_td_no_routes_message"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="No routes currently registered for this terminal."

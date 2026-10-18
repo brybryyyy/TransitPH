@@ -4,49 +4,65 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background"
-    android:fillViewport="true">
+    android:clipToPadding="false"
+    android:fillViewport="true"
+    android:overScrollMode="never">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:orientation="vertical"
-        android:padding="20dp">
+        android:paddingStart="20dp"
+        android:paddingTop="12dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="28dp">
 
-        <!-- Header -->
         <ImageButton
             android:id="@+id/btn_back_upgrade"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Back"
+            android:padding="10dp"
             android:src="@android:drawable/ic_menu_revert"
             app:tint="@color/text_primary" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="TransitPH Premium"
-            android:textColor="@color/text_primary"
-            android:textSize="24sp"
-            android:textStyle="bold" />
+            android:layout_marginTop="14dp"
+            android:text="TRANSITPH MEMBERSHIP"
+            android:textColor="@color/primary"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.08" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="Unlock unlimited daily route searches, offline maps, weather routing, and live terminal updates."
-            android:textColor="@color/text_secondary"
-            android:textSize="14sp" />
+            android:layout_marginTop="5dp"
+            android:text="Go Premium"
+            android:textColor="@color/text_primary"
+            android:textSize="30sp"
+            android:textStyle="bold" />
 
-        <!-- Plan Comparison Card -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:lineSpacingExtra="2dp"
+            android:text="Unlimited route searches for 30 days after your payment is confirmed."
+            android:textColor="@color/text_secondary"
+            android:textSize="15sp" />
+
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="3dp"
-            app:cardBackgroundColor="@color/surface">
+            android:layout_marginTop="22dp"
+            app:cardBackgroundColor="@color/surface"
+            app:cardCornerRadius="22dp"
+            app:cardElevation="4dp"
+            app:cardUseCompatPadding="false">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -54,98 +70,160 @@
                 android:orientation="vertical"
                 android:padding="20dp">
 
-                <TextView
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="🌟 Commuter Pass (Monthly)"
-                    android:textColor="@color/primary"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="42dp"
+                        android:layout_height="42dp"
+                        android:background="@drawable/bg_premium_icon"
+                        android:gravity="center"
+                        android:text="★"
+                        android:textColor="#B77900"
+                        android:textSize="23sp" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Commuter Pass"
+                            android:textColor="@color/text_primary"
+                            android:textSize="18sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="30 days of Premium access"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:background="@drawable/bg_premium_price"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="16dp"
+                    android:paddingTop="13dp"
+                    android:paddingEnd="16dp"
+                    android:paddingBottom="13dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="₱49"
+                        android:textColor="@color/primary_dark"
+                        android:textSize="30sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:text="/ 30 days"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="end"
+                        android:background="@drawable/bg_premium_badge"
+                        android:paddingStart="10dp"
+                        android:paddingTop="6dp"
+                        android:paddingEnd="10dp"
+                        android:paddingBottom="6dp"
+                        android:text="ONE-TIME"
+                        android:textColor="@color/primary_dark"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
 
                 <TextView
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:text="₱49.00 / month"
-                    android:textColor="@color/text_primary"
-                    android:textSize="26sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:text="Cancel anytime. Billed locally via GCash, Maya, or Card."
+                    android:layout_marginTop="9dp"
+                    android:lineSpacingExtra="2dp"
+                    android:text="One-time payment via PayMongo. Premium lasts 30 days after payment is confirmed; renew manually."
                     android:textColor="@color/text_muted"
                     android:textSize="12sp" />
 
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
-                    android:layout_marginTop="16dp"
-                    android:layout_marginBottom="16dp"
+                    android:layout_marginTop="19dp"
+                    android:layout_marginBottom="15dp"
                     android:background="@color/border" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="✓ Unlimited multi-modal route searches"
-                    android:textColor="@color/text_primary"
-                    android:textSize="14sp" />
+                    android:text="YOUR PREMIUM BENEFITS"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.06" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="✓ Full offline database access (no cellular data needed)"
-                    android:textColor="@color/text_primary"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="✓ Severe weather warnings &amp; walking umbrella alerts"
-                    android:textColor="@color/text_primary"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="✓ Priority commuter safety notifications"
-                    android:textColor="@color/text_primary"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="✓ Zero advertisements &amp; cloud route sync"
-                    android:textColor="@color/text_primary"
-                    android:textSize="14sp" />
+                <TextView style="@style/PremiumBenefit" android:text="Unlimited multi-modal route searches" />
+                <TextView style="@style/PremiumBenefit" android:text="Unlimited searches while Premium is active" />
+                <TextView style="@style/PremiumBenefit" android:text="No daily search cap for the 30-day pass" />
+                <TextView style="@style/PremiumBenefit" android:text="Payment is verified automatically by PayMongo" />
+                <TextView style="@style/PremiumBenefit" android:text="Earn extra searches with a rewarded ad after the pass expires" />
 
                 <Button
                     android:id="@+id/btn_subscribe_monthly"
                     android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:layout_marginTop="24dp"
+                    android:layout_height="wrap_content"
+                    android:minHeight="56dp"
+                    android:layout_marginTop="22dp"
                     android:backgroundTint="@color/primary"
-                    android:text="Upgrade to Premium (₱49/mo)"
+                    android:paddingStart="16dp"
+                    android:paddingTop="14dp"
+                    android:paddingEnd="16dp"
+                    android:paddingBottom="14dp"
+                    android:text="Upgrade to Premium · ₱49"
                     android:textAllCaps="false"
                     android:textColor="@color/surface"
                     android:textSize="15sp"
                     android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="9dp"
+                    android:gravity="center"
+                    android:text="Secure checkout powered by PayMongo"
+                    android:textColor="@color/text_muted"
+                    android:textSize="12sp" />
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <!-- Current Status Footer -->
         <TextView
             android:id="@+id/tv_current_tier"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/bg_premium_status"
             android:gravity="center"
+            android:paddingStart="14dp"
+            android:paddingTop="13dp"
+            android:paddingEnd="14dp"
+            android:paddingBottom="13dp"
             android:text="Current Account Status: Free Tier (5 searches / day)"
             android:textColor="@color/text_secondary"
             android:textSize="13sp" />

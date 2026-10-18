@@ -2,7 +2,7 @@
 <resources>
     <string name="app_name">TransitPH</string>
     <string name="app_tagline">Your smarter way to commute around CALABARZON</string>
-    <string name="system_version">Official Release v1.0.0 • Verified CALABARZON Transit Network</string>
+    <string name="system_version">TransitPH • CALABARZON</string>
     
     <!-- Official Regulatory & Verification Strings -->
     <string name="official_verification_title">Verified Transport Network</string>

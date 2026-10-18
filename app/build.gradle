@@ -78,6 +78,7 @@ dependencies {
 
     // Google Play Services Location (Optional / Fallback to Manual)
     implementation 'com.google.android.gms:play-services-location:21.2.0'
+    implementation 'com.google.android.gms:play-services-ads:25.5.0'
 
     // OpenStreetMap Integration (osmdroid)
     implementation 'org.osmdroid:osmdroid-android:6.1.20'

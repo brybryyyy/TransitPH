@@ -120,6 +120,15 @@ public final class SupabaseClient {
         execute(request("/rest/v1/" + table + "?" + filter, bearerToken).delete().build());
     }
 
+    /** Invoke a Supabase Edge Function with the signed-in user's access token. */
+    public static JsonObject invokeFunction(String functionName, JsonObject payload, String bearerToken) throws SupabaseException {
+        Request req = request("/functions/v1/" + functionName, bearerToken)
+                .post(RequestBody.create(payload == null ? "{}" : payload.toString(), JSON_TYPE))
+                .build();
+        String body = execute(req);
+        JsonElement el = JsonParser.parseString(body.isEmpty() ? "{}" : body);
+        return el.isJsonObject() ? el.getAsJsonObject() : new JsonObject();
+    }
     // ------------------------------------------------------------------ Auth (GoTrue)
 
     /** POST /auth/v1/token?grant_type=password  ->  {access_token, user:{id,email,user_metadata}} */

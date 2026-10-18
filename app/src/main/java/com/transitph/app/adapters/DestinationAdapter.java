@@ -13,6 +13,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.transitph.app.R;
 import com.transitph.app.activities.RouteResultsActivity;
+import com.transitph.app.database.TerminalDao;
+import com.transitph.app.models.Terminal;
 import com.transitph.app.models.Destination;
 
 import java.util.ArrayList;
@@ -51,8 +53,23 @@ public class DestinationAdapter extends RecyclerView.Adapter<DestinationAdapter.
 
         holder.btnNavigate.setOnClickListener(v -> {
             Intent intent = new Intent(context, RouteResultsActivity.class);
-            intent.putExtra("ORIGIN", "");
-            intent.putExtra("DESTINATION", item.getName());
+            String municipality = item.getMunicipality() == null ? "" : item.getMunicipality().trim();
+            intent.putExtra(RouteResultsActivity.EXTRA_FROM, "");
+            intent.putExtra(RouteResultsActivity.EXTRA_TO, municipality);
+            intent.putExtra(RouteResultsActivity.EXTRA_DESTINATION_LABEL, item.getName());
+
+            // If no route reaches the municipality itself, show routes to the nearest saved terminal.
+            Terminal nearby = null;
+            for (Terminal terminal : new TerminalDao(context).searchTerminals(item.getNearbyTerminalName())) {
+                if (terminal.getTerminalName() != null && terminal.getTerminalName().equalsIgnoreCase(item.getNearbyTerminalName())) {
+                    nearby = terminal;
+                    break;
+                }
+            }
+            if (nearby != null && nearby.getCity() != null && !nearby.getCity().trim().isEmpty()
+                    && !nearby.getCity().equalsIgnoreCase(municipality)) {
+                intent.putExtra(RouteResultsActivity.EXTRA_DESTINATION_FALLBACK, nearby.getCity());
+            }
             context.startActivity(intent);
         });
     }

@@ -2,14 +2,14 @@ package com.transitph.app.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 import com.transitph.app.R;
 import com.transitph.app.adapters.RouteAdapter;
 import com.transitph.app.database.RouteDao;
@@ -18,6 +18,8 @@ import com.transitph.app.database.TerminalDao;
 import com.transitph.app.models.Route;
 import com.transitph.app.models.Terminal;
 import com.transitph.app.utils.SessionManager;
+import com.transitph.app.utils.RouteTransportFilter;
+import com.google.android.material.chip.ChipGroup;
 import java.util.List;
 
 public class TerminalDetailsActivity extends AppCompatActivity implements RouteAdapter.OnRouteClickListener {
@@ -30,17 +32,20 @@ public class TerminalDetailsActivity extends AppCompatActivity implements RouteA
     private TextView tvCoordinates;
     private TextView tvDescription;
     private TextView tvRoutesCountHeader;
-    private RecyclerView rvAvailableRoutes;
+    private LinearLayout routeListContainer;
     private View layoutNoRoutes;
     private Button btnNavigate;
     private ImageButton btnBack;
+    private ChipGroup transportFilters;
+    private TextView tvNoRoutesMessage;
 
     private Terminal terminal;
     private TerminalDao terminalDao;
     private RouteDao routeDao;
     private SavedRouteDao savedRouteDao;
     private SessionManager sessionManager;
-    private RouteAdapter routeAdapter;
+    private List<Route> allRoutes = new java.util.ArrayList<>();
+    private String selectedTransport = RouteTransportFilter.ALL;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,16 +81,18 @@ public class TerminalDetailsActivity extends AppCompatActivity implements RouteA
         tvCoordinates = findViewById(R.id.tv_td_coordinates);
         tvDescription = findViewById(R.id.tv_td_description);
         tvRoutesCountHeader = findViewById(R.id.tv_td_routes_header);
-        rvAvailableRoutes = findViewById(R.id.rv_terminal_routes);
+        routeListContainer = findViewById(R.id.rv_terminal_routes);
         layoutNoRoutes = findViewById(R.id.layout_td_no_routes);
         btnNavigate = findViewById(R.id.btn_td_navigate);
         btnBack = findViewById(R.id.btn_back_terminal_details);
+        transportFilters = findViewById(R.id.chips_td_transport_filters);
+        tvNoRoutesMessage = findViewById(R.id.tv_td_no_routes_message);
 
         btnBack.setOnClickListener(v -> finish());
-
-        rvAvailableRoutes.setLayoutManager(new LinearLayoutManager(this));
-        routeAdapter = new RouteAdapter(null, this);
-        rvAvailableRoutes.setAdapter(routeAdapter);
+        RouteTransportFilter.setup(this, transportFilters, filter -> {
+            selectedTransport = filter;
+            renderRoutes();
+        });
 
         btnNavigate.setOnClickListener(v -> {
             Intent mapIntent = new Intent(this, MapActivity.class);
@@ -100,17 +107,57 @@ public class TerminalDetailsActivity extends AppCompatActivity implements RouteA
         tvCoordinates.setText("🌐 GPS: " + terminal.getCoordinatesText());
         tvDescription.setText(terminal.getDescription() != null ? terminal.getDescription() : "Standard jeepney and provincial transit terminal.");
 
-        List<Route> routes = routeDao.getRoutesByTerminalId(terminal.getId());
-        tvRoutesCountHeader.setText("AVAILABLE ROUTES (" + routes.size() + ")");
+        allRoutes = routeDao.getRoutesByTerminalId(terminal.getId());
+        renderRoutes();
+    }
+
+    private void renderRoutes() {
+        List<Route> routes = RouteTransportFilter.filterRoutes(allRoutes, selectedTransport);
+        tvRoutesCountHeader.setText("AVAILABLE ROUTES (" + routes.size() + (routes.size() == allRoutes.size() ? ")" : " of " + allRoutes.size() + ")"));
+        routeListContainer.removeAllViews();
 
         if (routes.isEmpty()) {
-            rvAvailableRoutes.setVisibility(View.GONE);
+            routeListContainer.setVisibility(View.GONE);
             layoutNoRoutes.setVisibility(View.VISIBLE);
+            if (tvNoRoutesMessage != null) {
+                tvNoRoutesMessage.setText(allRoutes.isEmpty()
+                        ? "No routes currently registered for this terminal."
+                        : "No " + selectedTransport + " routes here. Choose All to see every route.");
+            }
         } else {
-            rvAvailableRoutes.setVisibility(View.VISIBLE);
+            routeListContainer.setVisibility(View.VISIBLE);
             layoutNoRoutes.setVisibility(View.GONE);
-            routeAdapter.setRoutes(routes);
+            LayoutInflater inflater = LayoutInflater.from(this);
+            for (Route route : routes) {
+                View routeCard = inflater.inflate(R.layout.item_route, routeListContainer, false);
+                bindRouteCard(routeCard, route);
+                routeListContainer.addView(routeCard);
+            }
         }
+    }
+
+    private void bindRouteCard(View itemView, Route route) {
+        TextView tvTransportBadge = itemView.findViewById(R.id.tv_transport_badge);
+        TextView tvRouteTitle = itemView.findViewById(R.id.tv_route_title);
+        TextView tvTerminalName = itemView.findViewById(R.id.tv_terminal_name);
+        TextView tvFare = itemView.findViewById(R.id.tv_fare);
+        TextView tvTravelTime = itemView.findViewById(R.id.tv_travel_time);
+        TextView tvTransfers = itemView.findViewById(R.id.tv_transfers);
+        TextView tvWalking = itemView.findViewById(R.id.tv_walking);
+        Button btnViewRoute = itemView.findViewById(R.id.btn_view_route);
+        Button btnSaveRoute = itemView.findViewById(R.id.btn_save_route);
+
+        tvTransportBadge.setText(route.getTransportIconText());
+        tvRouteTitle.setText(route.getOrigin() + " → " + route.getDestination());
+        tvTerminalName.setText(route.getTerminalName() != null ? "📍 " + route.getTerminalName() : "📍 Terminal");
+        tvFare.setText(route.getFormattedFare());
+        tvTravelTime.setText(route.getFormattedTime());
+        tvTransfers.setText(route.getTransferCount() + " transfer");
+        tvWalking.setText("🚶 " + route.getWalkingDistanceMeters() + "m walking");
+
+        itemView.setOnClickListener(v -> onRouteClick(route));
+        btnViewRoute.setOnClickListener(v -> onRouteClick(route));
+        btnSaveRoute.setOnClickListener(v -> onSaveRouteClick(route));
     }
 
     @Override

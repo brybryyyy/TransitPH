@@ -2,12 +2,17 @@ package com.transitph.app.database;
 
 import android.content.ContentValues;
 import android.content.Context;
+import android.database.DatabaseUtils;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import com.transitph.app.utils.PasswordUtils;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
 
@@ -240,27 +245,189 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         onCreate(db);
     }
 
-    private void seedDemoData(SQLiteDatabase db) {
-        // 1. Seed Demo Accounts
-        // Admin account: admin@transitph.test / Admin123!
-        ContentValues adminUser = new ContentValues();
-        adminUser.put(COL_USER_FULL_NAME, "TransitPH Administrator");
-        adminUser.put(COL_USER_EMAIL, "admin@transitph.test");
-        adminUser.put(COL_USER_PASSWORD_HASH, PasswordUtils.hashPassword("Admin123!"));
-        adminUser.put(COL_USER_ROLE, "ADMIN");
-        db.insert(TABLE_USERS, null, adminUser);
+    /** Re-adds the original bundled transit data without deleting or moving existing records. */
+    public void restoreBundledTransitData() {
+        SQLiteDatabase db = getWritableDatabase();
+        db.beginTransaction();
+        try {
+            seedTransitData(db);
+            importTerminalsFromCsv(db);
+            ensureEstimatedRouteCoverage(db);
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
+    }
 
-        // Commuter account: user@transitph.test / User123!
-        ContentValues normalUser = new ContentValues();
-        normalUser.put(COL_USER_FULL_NAME, "Maria Santos");
-        normalUser.put(COL_USER_EMAIL, "user@transitph.test");
-        normalUser.put(COL_USER_PASSWORD_HASH, PasswordUtils.hashPassword("User123!"));
-        normalUser.put(COL_USER_ROLE, "USER");
-        long normalUserId = db.insert(TABLE_USERS, null, normalUser);
+    /** Backfills empty terminals with a fare computed from the supplied Region IV-A fare matrix. */
+    public void ensureEstimatedRouteCoverage() {
+        SQLiteDatabase db = getWritableDatabase();
+        db.beginTransaction();
+        try {
+            ensureEstimatedRouteCoverage(db);
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
+    }
 
+    private static final class CoverageTerminal {
+        final long id;
+        final String name;
+        final String city;
+        final String province;
+        final double latitude;
+        final double longitude;
+
+        CoverageTerminal(long id, String name, String city, String province, double latitude, double longitude) {
+            this.id = id;
+            this.name = name;
+            this.city = city;
+            this.province = province;
+            this.latitude = latitude;
+            this.longitude = longitude;
+        }
+    }
+
+    private void ensureEstimatedRouteCoverage(SQLiteDatabase db) {
+        List<CoverageTerminal> terminals = new ArrayList<>();
+        try (Cursor cursor = db.rawQuery("SELECT " + COL_TERM_ID + ", " + COL_TERM_NAME + ", " + COL_TERM_CITY +
+                ", " + COL_TERM_PROVINCE + ", " + COL_TERM_LAT + ", " + COL_TERM_LNG + " FROM " +
+                TABLE_TERMINALS + " ORDER BY " + COL_TERM_ID, null)) {
+            while (cursor.moveToNext()) {
+                terminals.add(new CoverageTerminal(
+                        cursor.getLong(0), cursor.getString(1), cursor.getString(2), cursor.getString(3),
+                        cursor.getDouble(4), cursor.getDouble(5)));
+            }
+        }
+
+        for (CoverageTerminal origin : terminals) {
+            updateGeneratedConnectorIfPresent(db, origin, terminals);
+            long routeCount = DatabaseUtils.longForQuery(db,
+                    "SELECT COUNT(*) FROM " + TABLE_ROUTES + " WHERE " + COL_ROUTE_TERM_ID + " = ?",
+                    new String[]{String.valueOf(origin.id)});
+            if (routeCount > 0) continue;
+
+            CoverageTerminal destination = findNearestOtherMunicipality(origin, terminals);
+            if (destination == null) continue;
+
+            double straightLineKm = distanceKm(origin.latitude, origin.longitude,
+                    destination.latitude, destination.longitude);
+            double roadKm = Math.max(1.0, straightLineKm * 1.35);
+            String type = inferTransportType(origin.name);
+            double fare = fareFromRegionIvAMatrix(type, origin.name, roadKm);
+            double averageKph = "Bus".equals(type) ? 30.0 : 18.0;
+            int minutes = Math.max(10, (int) Math.ceil(roadKm / averageKph * 60.0));
+
+            String name = origin.city + " to " + destination.city;
+            String description = "Connector from " + origin.name + " to " + destination.name +
+                    ". Fare is calculated using the supplied Region IV-A " + fareMatrixName(type, origin.name) +
+                    " matrix; the actual fare depends on the vehicle class and route distance.";
+            long routeId = insertRoute(db, origin.id, name, origin.city, destination.city, type, fare, minutes, description);
+            if (routeId > 0 && destination.latitude != 0 && destination.longitude != 0) {
+                insertStop(db, routeId, destination.name, 1, destination.latitude, destination.longitude);
+            }
+        }
+    }
+
+    /** Converts routes created by the earlier backfill in place, retaining their IDs and stops. */
+    private void updateGeneratedConnectorIfPresent(SQLiteDatabase db, CoverageTerminal origin,
+                                                   List<CoverageTerminal> terminals) {
+        try (Cursor cursor = db.query(TABLE_ROUTES,
+                new String[]{COL_ROUTE_ID},
+                COL_ROUTE_TERM_ID + " = ? AND (" + COL_ROUTE_NAME + " LIKE 'ESTIMATED CONNECTOR%' OR " +
+                        COL_ROUTE_DESC + " LIKE 'DEMO ESTIMATE ONLY%')",
+                new String[]{String.valueOf(origin.id)}, null, null, null)) {
+            while (cursor.moveToNext()) {
+                CoverageTerminal destination = findNearestOtherMunicipality(origin, terminals);
+                if (destination == null) continue;
+                double roadKm = Math.max(1.0, distanceKm(origin.latitude, origin.longitude,
+                        destination.latitude, destination.longitude) * 1.35);
+                String type = inferTransportType(origin.name);
+                String name = origin.city + " to " + destination.city;
+                String description = "Connector from " + origin.name + " to " + destination.name +
+                        ". Fare is calculated using the supplied Region IV-A " + fareMatrixName(type, origin.name) +
+                        " matrix; the actual fare depends on the vehicle class and route distance.";
+                ContentValues values = new ContentValues();
+                values.put(COL_ROUTE_NAME, name);
+                values.put(COL_ROUTE_ORIGIN, origin.city);
+                values.put(COL_ROUTE_DESTINATION, destination.city);
+                values.put(COL_ROUTE_TRANSPORT_TYPE, type);
+                values.put(COL_ROUTE_FARE, fareFromRegionIvAMatrix(type, origin.name, roadKm));
+                values.put(COL_ROUTE_TIME, Math.max(10, (int) Math.ceil(roadKm /
+                        ("Bus".equals(type) ? 30.0 : 18.0) * 60.0)));
+                values.put(COL_ROUTE_DESC, description);
+                db.update(TABLE_ROUTES, values, COL_ROUTE_ID + " = ?",
+                        new String[]{String.valueOf(cursor.getLong(0))});
+            }
+        }
+    }
+
+    private static double fareFromRegionIvAMatrix(String type, String terminalName, double distanceKm) {
+        if ("Bus".equals(type)) {
+            boolean airConditioned = terminalName != null &&
+                    (terminalName.toLowerCase(Locale.ROOT).contains("aircon") ||
+                            terminalName.toLowerCase(Locale.ROOT).contains("air-conditioned") ||
+                            terminalName.toLowerCase(Locale.ROOT).contains("ac bus"));
+            return (airConditioned ? 15.0 : 13.0) + Math.max(0.0, distanceKm - 5.0) *
+                    (airConditioned ? 2.65 : 2.25);
+        }
+        // Traditional public utility jeepney fares from the supplied CALABARZON matrix.
+        return 14.0 + Math.max(0.0, distanceKm - 4.0) * 2.0;
+    }
+
+    private static String fareMatrixName(String type, String terminalName) {
+        if (!"Bus".equals(type)) return "Traditional PUJ";
+        boolean airConditioned = terminalName != null &&
+                (terminalName.toLowerCase(Locale.ROOT).contains("aircon") ||
+                        terminalName.toLowerCase(Locale.ROOT).contains("air-conditioned") ||
+                        terminalName.toLowerCase(Locale.ROOT).contains("ac bus"));
+        return airConditioned ? "Air-Conditioned Provincial Bus" : "Ordinary Provincial Bus";
+    }
+
+    private static CoverageTerminal findNearestOtherMunicipality(CoverageTerminal origin, List<CoverageTerminal> terminals) {
+        CoverageTerminal best = null;
+        double bestScore = Double.MAX_VALUE;
+        for (CoverageTerminal candidate : terminals) {
+            if (candidate.id == origin.id || sameLocation(origin.city, candidate.city) ||
+                    candidate.latitude == 0 || candidate.longitude == 0) continue;
+            double score = distanceKm(origin.latitude, origin.longitude, candidate.latitude, candidate.longitude);
+            if (!origin.province.equalsIgnoreCase(candidate.province)) score += 100.0;
+            if (score < bestScore) {
+                bestScore = score;
+                best = candidate;
+            }
+        }
+        return best;
+    }
+
+    private static boolean sameLocation(String first, String second) {
+        String a = first == null ? "" : first.trim().toLowerCase(Locale.ROOT);
+        String b = second == null ? "" : second.trim().toLowerCase(Locale.ROOT);
+        return a.equals(b);
+    }
+
+    private static String inferTransportType(String terminalName) {
+        String name = terminalName == null ? "" : terminalName.toLowerCase(Locale.ROOT);
+        if (name.contains("bus")) return "Bus";
+        return "Jeepney";
+    }
+
+    private static double distanceKm(double lat1, double lon1, double lat2, double lon2) {
+        double earthRadiusKm = 6371.0;
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+                        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    private long seedTransitData(SQLiteDatabase db) {
         // 2. Seed CALABARZON Terminals (16 realistic terminals across Laguna, Cavite, Batangas, Rizal, Quezon)
         // LAGUNA
         long termCalamba = insertTerminal(db, "Calamba Jeepney Terminal", "Calamba", "Laguna", 14.2132, 121.1648, "Central terminal near SM City Calamba and Crossing.");
+        long termCabuyao = insertTerminal(db, "Cabuyao Bayan Jeepney Terminal", "Cabuyao", "Laguna", 14.2700, 121.1300, "Cabuyao Bayan loading point on the Calamba-Laguna National Highway.");
         long termBalibago = insertTerminal(db, "Balibago Complex Terminal", "Santa Rosa", "Laguna", 14.2965, 121.1114, "Primary transit hub connecting Santa Rosa to Metro Manila and Laguna towns.");
         long termPacita = insertTerminal(db, "Pacita Central Terminal", "San Pedro", "Laguna", 14.3492, 121.0543, "Major southern gateway terminal serving San Pedro and Biñan commuters.");
         long termBinan = insertTerminal(db, "Biñan Central Jeepney Terminal", "Biñan", "Laguna", 14.3382, 121.0825, "Located near Biñan People's Center and market district.");
@@ -371,6 +538,70 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         long r32 = insertRoute(db, termDasma, "Dasmariñas Pala-Pala Inter-Terminal Link", "Dasmariñas", "SM Dasmariñas", "Walking", 0.00, 6, "Pedestrian footbridge connecting bus bay to jeepney queue.");
         long r33 = insertRoute(db, termCalamba, "Calamba – Santa Rosa (Via Cabuyao Express Jeep)", "Calamba", "Santa Rosa", "Jeepney", 32.00, 40, "Fast commuter jeepney with minimal passenger stops along bypass road.");
         long r34 = insertRoute(db, termBalibago, "Santa Rosa – Manila (Buendia LRT P2P)", "Santa Rosa", "Pasay", "Bus", 85.00, 60, "Point-to-point commuter bus operating via SLEX.");
+        // Distance-based PUJ fare estimates from the user-supplied Region IV-A matrix:
+        // ₱14 base for the first 4 km, then ₱2/km; eligible discount is 20%.
+        long calambaCabuyao = insertRoute(db, termCalamba, "Calamba – Cabuyao Bayan via National Road (Jeepney)", "Calamba", "Cabuyao City", "Jeepney", 25.00, 30,
+                "Estimated 9.5 km via National Road. Estimated matrix fare: ₱25 regular / ₱20 discounted (20%). Distance, fare and travel time are estimates; confirm with the driver/operator.");
+        insertStop(db, calambaCabuyao, "Calamba Crossing Terminal", 1, 14.2132, 121.1648);
+        insertStop(db, calambaCabuyao, "Parian Checkpoint", 2, 14.2300, 121.1500);
+        insertStop(db, calambaCabuyao, "Cabuyao Bayan Jeepney Terminal", 3, 14.2700, 121.1300);
+        long cabuyaoCalamba = insertRoute(db, termCabuyao, "Cabuyao – Calamba via National Road (Jeepney)", "Cabuyao City", "Calamba", "Jeepney", 25.00, 30,
+                "Return via National Road. Estimated 9.5 km and matrix fare ₱25 regular / ₱20 discounted (20%). Distance, fare and travel time are estimates; confirm with the driver/operator.");
+        insertStop(db, cabuyaoCalamba, "Cabuyao Bayan Jeepney Terminal", 1, 14.2700, 121.1300);
+        insertStop(db, cabuyaoCalamba, "Parian Checkpoint", 2, 14.2300, 121.1500);
+        insertStop(db, cabuyaoCalamba, "Calamba Crossing Terminal", 3, 14.2132, 121.1648);
+
+        long calambaBinan = insertRoute(db, termCalamba, "Calamba – Biñan via National Road (Jeepney)", "Calamba", "Biñan", "Jeepney", 44.00, 55,
+                "Estimated 19 km via National Road through Cabuyao and Santa Rosa. Estimated matrix fare: ₱44 regular / ₱35.20 discounted (20%). Distance, fare and travel time are estimates; confirm with the driver/operator.");
+        insertStop(db, calambaBinan, "Calamba Crossing Terminal", 1, 14.2132, 121.1648);
+        insertStop(db, calambaBinan, "Cabuyao Bayan", 2, 14.2700, 121.1300);
+        insertStop(db, calambaBinan, "Santa Rosa Bayan", 3, 14.3100, 121.1100);
+        insertStop(db, calambaBinan, "Biñan Central Jeepney Terminal", 4, 14.3382, 121.0825);
+        long binanCalamba = insertRoute(db, termBinan, "Biñan – Calamba via National Road (Jeepney)", "Biñan", "Calamba", "Jeepney", 44.00, 55,
+                "Return via National Road through Santa Rosa and Cabuyao. Estimated 19 km and matrix fare ₱44 regular / ₱35.20 discounted (20%). Distance, fare and travel time are estimates; confirm with the driver/operator.");
+        insertStop(db, binanCalamba, "Biñan Central Jeepney Terminal", 1, 14.3382, 121.0825);
+        insertStop(db, binanCalamba, "Santa Rosa Bayan", 2, 14.3100, 121.1100);
+        insertStop(db, binanCalamba, "Cabuyao Bayan", 3, 14.2700, 121.1300);
+        insertStop(db, binanCalamba, "Calamba Crossing Terminal", 4, 14.2132, 121.1648);
+        // Calamba–Lipa fares supplied by the user. Regular fare is stored in fare;
+        // discounted fare is shown in the description because this schema has one fare column.
+        insertRoute(db, termCalamba, "Calamba – Lipa City via National Road (Jeepney)", "Calamba", "Lipa City", "Jeepney", 60.00, 90,
+                "Via National Road. Regular fare: ₱60; discounted fare: ₱50 for eligible passengers. Travel time is an estimate; confirm the route and fare with the operator.");
+        insertRoute(db, termLipa, "Lipa City – Calamba via National Road (Jeepney)", "Lipa City", "Calamba", "Jeepney", 60.00, 90,
+                "Return direction via National Road. Regular fare: ₱60; discounted fare: ₱50 for eligible passengers. Travel time is an estimate; confirm with the operator.");
+        insertRoute(db, termCalamba, "Calamba – Lipa City via SLEX Expressway (Van)", "Calamba", "Lipa City", "UV Express", 130.00, 75,
+                "Via SLEX Expressway. Regular fare: ₱130; discounted fare: ₱90 for eligible passengers. Travel time is an estimate; confirm the route and fare with the operator.");
+        insertRoute(db, termLipa, "Lipa City – Calamba via SLEX Expressway (Van)", "Lipa City", "Calamba", "UV Express", 130.00, 75,
+                "Return direction via SLEX Expressway. Regular fare: ₱130; discounted fare: ₱90 for eligible passengers. Travel time is an estimate; confirm with the operator.");
+
+        // User requested this connection; fare and travel time are estimates pending operator verification.
+        insertRoute(db, termCalamba, "Calamba – Robinsons Dasma Pala-Pala (Estimated Multi-modal)", "Calamba", "Dasmariñas", "Multi-modal", 120.00, 120,
+                "Estimated connection to Robinsons Place Dasma Pala-Pala, Dasmariñas. Estimated fare ₱120 regular / ₱96 discounted and travel time about 120 minutes; vehicle legs, transfer points, fare, and schedule are not operator-verified. Confirm locally before travel.");
+        insertRoute(db, termDasma, "Robinsons Dasma Pala-Pala – Calamba (Estimated Multi-modal)", "Dasmariñas", "Calamba", "Multi-modal", 120.00, 120,
+                "Return connection to Calamba. Estimated fare ₱120 regular / ₱96 discounted and travel time about 120 minutes; vehicle legs, transfer points, fare, and schedule are not operator-verified. Confirm locally before travel.");
+
+        return r1;
+    }
+
+    private void seedDemoData(SQLiteDatabase db) {
+        // 1. Seed Demo Accounts
+        // Admin account: admin@transitph.test / Admin123!
+        ContentValues adminUser = new ContentValues();
+        adminUser.put(COL_USER_FULL_NAME, "TransitPH Administrator");
+        adminUser.put(COL_USER_EMAIL, "admin@transitph.test");
+        adminUser.put(COL_USER_PASSWORD_HASH, PasswordUtils.hashPassword("Admin123!"));
+        adminUser.put(COL_USER_ROLE, "ADMIN");
+        db.insert(TABLE_USERS, null, adminUser);
+
+        // Commuter account: user@transitph.test / User123!
+        ContentValues normalUser = new ContentValues();
+        normalUser.put(COL_USER_FULL_NAME, "Maria Santos");
+        normalUser.put(COL_USER_EMAIL, "user@transitph.test");
+        normalUser.put(COL_USER_PASSWORD_HASH, PasswordUtils.hashPassword("User123!"));
+        normalUser.put(COL_USER_ROLE, "USER");
+        long normalUserId = db.insert(TABLE_USERS, null, normalUser);
+
+        long r1 = seedTransitData(db);
 
         // 4. Pre-save one sample route for the demo user
         ContentValues saved = new ContentValues();
@@ -450,6 +681,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     private long insertTerminal(SQLiteDatabase db, String name, String city, String province, double lat, double lng, String desc) {
+        long existingId = DatabaseUtils.longForQuery(db,
+                "SELECT COALESCE((SELECT " + COL_TERM_ID + " FROM " + TABLE_TERMINALS +
+                        " WHERE lower(trim(" + COL_TERM_NAME + ")) = lower(trim(?)) AND lower(trim(" + COL_TERM_CITY +
+                        ")) = lower(trim(?)) AND lower(trim(" + COL_TERM_PROVINCE + ")) = lower(trim(?)) LIMIT 1), -1)",
+                new String[]{name, city, province});
+        if (existingId > 0) return existingId; // preserve existing terminal fields and coordinates
         ContentValues cv = new ContentValues();
         cv.put(COL_TERM_NAME, name);
         cv.put(COL_TERM_CITY, city);
@@ -461,6 +698,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     private long insertRoute(SQLiteDatabase db, long termId, String name, String origin, String dest, String type, double fare, int time, String desc) {
+        long existingId = DatabaseUtils.longForQuery(db,
+                "SELECT COALESCE((SELECT " + COL_ROUTE_ID + " FROM " + TABLE_ROUTES + " WHERE " + COL_ROUTE_TERM_ID +
+                        " = ? AND lower(trim(" + COL_ROUTE_NAME + ")) = lower(trim(?)) AND lower(trim(" + COL_ROUTE_ORIGIN +
+                        ")) = lower(trim(?)) AND lower(trim(" + COL_ROUTE_DESTINATION + ")) = lower(trim(?)) AND lower(trim(" +
+                        COL_ROUTE_TRANSPORT_TYPE + ")) = lower(trim(?)) LIMIT 1), -1)",
+                new String[]{String.valueOf(termId), name, origin, dest, type});
+        if (existingId > 0) return existingId; // preserve existing route values
         ContentValues cv = new ContentValues();
         cv.put(COL_ROUTE_TERM_ID, termId);
         cv.put(COL_ROUTE_NAME, name);
@@ -515,6 +759,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     private void insertStop(SQLiteDatabase db, long routeId, String stopName, int seq, double lat, double lng) {
+        long existingCount = DatabaseUtils.longForQuery(db,
+                "SELECT COUNT(*) FROM " + TABLE_ROUTE_STOPS + " WHERE " + COL_STOP_ROUTE_ID +
+                        " = ? AND lower(trim(" + COL_STOP_NAME + ")) = lower(trim(?))",
+                new String[]{String.valueOf(routeId), stopName});
+        if (existingCount > 0) return;
         ContentValues cv = new ContentValues();
         cv.put(COL_STOP_ROUTE_ID, routeId);
         cv.put(COL_STOP_NAME, stopName);

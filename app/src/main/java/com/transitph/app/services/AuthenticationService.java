@@ -57,12 +57,14 @@ public class AuthenticationService {
 
                 String fullName = "";
                 String role = "USER";
+                String premiumUntil = "";
                 try {
-                    JsonArray profile = SupabaseClient.select("profiles", "select=full_name,role&id=eq." + remoteId, token);
+                    JsonArray profile = SupabaseClient.select("profiles", "select=full_name,role,premium_until&id=eq." + remoteId, token);
                     if (profile.size() > 0 && profile.get(0).isJsonObject()) {
                         JsonObject p = profile.get(0).getAsJsonObject();
                         fullName = SupabaseClient.str(p, "", "full_name");
                         role = SupabaseClient.str(p, "USER", "role");
+                        premiumUntil = SupabaseClient.str(p, "", "premium_until");
                     } else {
                         // Profile row missing (e.g. email confirmation was required at sign-up): create it now.
                         String metaName = "";
@@ -92,6 +94,7 @@ public class AuthenticationService {
                 }
                 sessionManager.createLoginSession(user);
                 sessionManager.setSupabaseSession(token, remoteId);
+                sessionManager.setPremiumUntil(premiumUntil);
                 return new AuthResult(true, "Login successful.", user);
             } catch (SupabaseException e) {
                 if (!e.isNetworkError()) {

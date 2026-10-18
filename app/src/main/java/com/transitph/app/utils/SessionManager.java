@@ -14,6 +14,7 @@ public class SessionManager {
     private static final String KEY_ACCESS_TOKEN = "supabaseAccessToken";
     private static final String KEY_REMOTE_USER_ID = "supabaseUserId";
     private static final String KEY_SELECTED_LANGUAGE = "selectedLanguage"; // "en", "fil", "bikol"
+    private static final String KEY_PREMIUM_UNTIL = "premiumUntil";
 
     private final SharedPreferences pref;
     private final SharedPreferences.Editor editor;
@@ -80,6 +81,28 @@ public class SessionManager {
         return "ADMIN".equalsIgnoreCase(getRole());
     }
 
+    public void setPremiumUntil(String premiumUntil) {
+        editor.putString(KEY_PREMIUM_UNTIL, premiumUntil == null ? "" : premiumUntil).apply();
+    }
+
+    public String getPremiumUntil() {
+        return pref.getString(KEY_PREMIUM_UNTIL, "");
+    }
+
+    public boolean isPremiumActive() {
+        String value = getPremiumUntil();
+        if (value == null || value.trim().isEmpty()) return false;
+        try {
+            String normalized = value.trim();
+            if (normalized.length() < 19) return false;
+            java.text.SimpleDateFormat parser = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.US);
+            parser.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+            java.util.Date until = parser.parse(normalized.substring(0, 19));
+            return until != null && until.getTime() > System.currentTimeMillis();
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
     public void setSelectedLanguage(String lang) {
         editor.putString(KEY_SELECTED_LANGUAGE, lang);
         editor.apply();
