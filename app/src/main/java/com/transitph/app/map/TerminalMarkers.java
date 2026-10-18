@@ -29,7 +29,7 @@ public final class TerminalMarkers {
         int px = (int) (14 * d);
 
         for (Terminal t : terminals) {
-            if (t.getLatitude() == 0 || t.getLongitude() == 0) continue;
+            if (!hasUsableMapCoordinate(t)) continue;
             if (t.getRouteCount() <= 0) continue;
 
             GradientDrawable dot = new GradientDrawable();
@@ -48,5 +48,36 @@ public final class TerminalMarkers {
             map.getOverlays().add(m);
         }
         map.invalidate();
+    }
+
+    private static boolean hasUsableMapCoordinate(Terminal terminal) {
+        double latitude = terminal.getLatitude();
+        double longitude = terminal.getLongitude();
+        if (Double.isNaN(latitude) || Double.isInfinite(latitude) ||
+                Double.isNaN(longitude) || Double.isInfinite(longitude)) return false;
+        // Broad CALABARZON bounds reject corrupt coordinates while allowing its outer islands.
+        if (latitude < 12.0 || latitude > 15.6 || longitude < 119.5 || longitude > 123.2) return false;
+
+        // The imported master CSV stores route-description text in the description column.
+        // Its coordinates are generated grid points, not surveyed terminal locations, and some
+        // fall offshore. Keep those records and their coordinates in the database, but don't map
+        // them as real terminal pins.
+        String description = terminal.getDescription();
+        String city = terminal.getCity();
+        if (description != null && city != null && !city.trim().isEmpty()) {
+            String lowerDescription = description.toLowerCase(java.util.Locale.ROOT);
+            int routeLabelEnd = lowerDescription.indexOf(" - ");
+            if (description.contains(";") && routeLabelEnd > 0) {
+                String csvRouteCity = lowerDescription.substring(0, routeLabelEnd).trim();
+                if (normalizePlace(csvRouteCity).equals(normalizePlace(city))) return false;
+            }
+        }
+        return latitude != 0.0 && longitude != 0.0;
+    }
+
+    private static String normalizePlace(String place) {
+        String normalized = place.trim().toLowerCase(java.util.Locale.ROOT);
+        if (normalized.endsWith(" city")) normalized = normalized.substring(0, normalized.length() - 5).trim();
+        return normalized;
     }
 }

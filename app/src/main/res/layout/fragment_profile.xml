@@ -152,7 +152,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Official Release Status (v1.0.0 Ready)"
+                    android:text="TransitPH Features"
                     android:textColor="@color/primary"
                     android:textSize="14sp"
                     android:textStyle="bold" />

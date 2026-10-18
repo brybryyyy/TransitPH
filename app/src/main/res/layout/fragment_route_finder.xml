@@ -171,14 +171,35 @@
         app:layout_constraintTop_toBottomOf="@id/card_rf_map"
         app:layout_constraintStart_toStartOf="parent" />
 
+    <HorizontalScrollView
+        android:id="@+id/scroll_rf_transport_filters"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:scrollbars="none"
+        app:layout_constraintTop_toBottomOf="@id/tv_rf_list_header">
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chips_rf_transport_filters"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="2dp"
+            app:chipSpacingHorizontal="4dp"
+            app:singleLine="true"
+            app:singleSelection="true"
+            app:selectionRequired="true" />
+    </HorizontalScrollView>
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_rf_popular_routes"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="6dp"
+        android:layout_marginTop="4dp"
         android:padding="12dp"
         android:clipToPadding="false"
-        app:layout_constraintTop_toBottomOf="@id/tv_rf_list_header"
+        app:layout_constraintTop_toBottomOf="@id/scroll_rf_transport_filters"
         app:layout_constraintBottom_toBottomOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

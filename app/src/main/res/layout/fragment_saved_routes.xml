@@ -40,6 +40,27 @@
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
+    <HorizontalScrollView
+        android:id="@+id/scroll_saved_transport_filters"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:scrollbars="none"
+        app:layout_constraintTop_toBottomOf="@id/card_saved_header">
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chips_saved_transport_filters"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="4dp"
+            app:chipSpacingHorizontal="4dp"
+            app:singleLine="true"
+            app:singleSelection="true"
+            app:selectionRequired="true" />
+    </HorizontalScrollView>
+
     <!-- Saved Routes RecyclerView -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_saved_routes"
@@ -47,7 +68,7 @@
         android:layout_height="0dp"
         android:padding="12dp"
         android:clipToPadding="false"
-        app:layout_constraintTop_toBottomOf="@id/card_saved_header"
+        app:layout_constraintTop_toBottomOf="@id/scroll_saved_transport_filters"
         app:layout_constraintBottom_toBottomOf="parent" />
 
     <!-- Empty State -->
@@ -59,7 +80,7 @@
         android:gravity="center"
         android:padding="32dp"
         android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/card_saved_header"
+        app:layout_constraintTop_toBottomOf="@id/scroll_saved_transport_filters"
         app:layout_constraintBottom_toBottomOf="parent">
 
         <ImageView
@@ -69,6 +90,7 @@
             app:tint="@color/text_muted" />
 
         <TextView
+                    android:id="@+id/tv_saved_empty_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
@@ -78,6 +100,7 @@
             android:textStyle="bold" />
 
         <TextView
+                    android:id="@+id/tv_saved_empty_description"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"

@@ -8,6 +8,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -24,6 +25,8 @@ import com.transitph.app.database.TerminalDao;
 import com.transitph.app.models.Route;
 import com.transitph.app.models.Terminal;
 import com.transitph.app.utils.SessionManager;
+import com.transitph.app.utils.RouteTransportFilter;
+import com.google.android.material.chip.ChipGroup;
 import org.osmdroid.config.Configuration;
 import com.transitph.app.map.TerminalMarkers;
 import com.transitph.app.map.TomTomTileSource;
@@ -40,6 +43,8 @@ public class RouteFinderFragment extends Fragment implements RouteAdapter.OnRout
     private Button btnFindRoute;
     private ImageButton btnSwap;
     private RecyclerView rvPopularRoutes;
+    private TextView tvRouteListHeader;
+    private ChipGroup transportFilters;
 
     // Quick chips
     private Button chipCalamba;
@@ -53,6 +58,8 @@ public class RouteFinderFragment extends Fragment implements RouteAdapter.OnRout
     private SessionManager sessionManager;
     private RouteAdapter adapter;
     private MapView map;
+    private List<Route> featuredRoutes = new java.util.ArrayList<>();
+    private String selectedTransport = RouteTransportFilter.ALL;
 
     @Nullable
     @Override
@@ -78,6 +85,8 @@ public class RouteFinderFragment extends Fragment implements RouteAdapter.OnRout
         btnFindRoute = view.findViewById(R.id.btn_rf_find);
         btnSwap = view.findViewById(R.id.btn_rf_swap);
         rvPopularRoutes = view.findViewById(R.id.rv_rf_popular_routes);
+        tvRouteListHeader = view.findViewById(R.id.tv_rf_list_header);
+        transportFilters = view.findViewById(R.id.chips_rf_transport_filters);
 
         chipCalamba = view.findViewById(R.id.chip_loc_calamba);
         chipSantaRosa = view.findViewById(R.id.chip_loc_santarosa);
@@ -87,6 +96,10 @@ public class RouteFinderFragment extends Fragment implements RouteAdapter.OnRout
         rvPopularRoutes.setLayoutManager(new LinearLayoutManager(requireContext()));
         adapter = new RouteAdapter(null, this);
         rvPopularRoutes.setAdapter(adapter);
+        RouteTransportFilter.setup(requireContext(), transportFilters, filter -> {
+            selectedTransport = filter;
+            applyFeaturedRouteFilter();
+        });
 
         // Initialize Map
         map = view.findViewById(R.id.map_rf);
@@ -133,11 +146,17 @@ public class RouteFinderFragment extends Fragment implements RouteAdapter.OnRout
     }
 
     private void loadFeaturedRoutes() {
-        List<Route> routes = routeDao.getAllRoutes();
-        if (routes.size() > 8) {
-            routes = routes.subList(0, 8);
+        featuredRoutes = routeDao.getAllRoutes();
+        applyFeaturedRouteFilter();
+    }
+
+    private void applyFeaturedRouteFilter() {
+        List<Route> filtered = RouteTransportFilter.filterRoutes(featuredRoutes, selectedTransport);
+        if (tvRouteListHeader != null) {
+            String label = RouteTransportFilter.ALL.equals(selectedTransport) ? "ALL TRANSIT ROUTES" : selectedTransport.toUpperCase(java.util.Locale.ROOT) + " ROUTES";
+            tvRouteListHeader.setText(label + " (" + filtered.size() + ")");
         }
-        adapter.setRoutes(routes);
+        adapter.setRoutes(filtered);
     }
 
     @Override

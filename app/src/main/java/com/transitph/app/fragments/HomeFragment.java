@@ -50,6 +50,7 @@ public class HomeFragment extends Fragment implements SavedRouteAdapter.OnSavedR
     private View btnQuickDestinations;
     private View btnQuickSafety;
     private View cardSearchLimit;
+    private TextView tvSearchLimit;
 
     private Button btnOpenAssistant;
     private TextView tvWelcomeUser;
@@ -85,6 +86,7 @@ public class HomeFragment extends Fragment implements SavedRouteAdapter.OnSavedR
             map.onResume();
         }
         loadSavedRoutesPreview();
+        updateSearchLimitLabel();
     }
 
     @Override
@@ -117,6 +119,8 @@ public class HomeFragment extends Fragment implements SavedRouteAdapter.OnSavedR
         btnQuickDestinations = view.findViewById(R.id.card_quick_destinations);
         btnQuickSafety = view.findViewById(R.id.card_quick_safety);
         cardSearchLimit = view.findViewById(R.id.card_home_search_limit);
+        tvSearchLimit = view.findViewById(R.id.tv_home_search_limit);
+        updateSearchLimitLabel();
 
         btnOpenAssistant = view.findViewById(R.id.btn_open_assistant_banner);
         tvWelcomeUser = view.findViewById(R.id.tv_home_welcome_user);
@@ -187,6 +191,15 @@ public class HomeFragment extends Fragment implements SavedRouteAdapter.OnSavedR
         }
     }
 
+    private void updateSearchLimitLabel() {
+        if (tvSearchLimit == null || sessionManager == null) return;
+        if (sessionManager.isPremiumActive()) {
+            tvSearchLimit.setText("Premium: unlimited searches");
+        } else {
+            int remaining = com.transitph.app.utils.SearchQuotaManager.remaining(requireContext(), sessionManager);
+            tvSearchLimit.setText("Free daily searches: " + remaining + "/5 remaining");
+        }
+    }
     private void handleFindRoute() {
         String from = etFrom.getText().toString().trim();
         String to = etTo.getText().toString().trim();

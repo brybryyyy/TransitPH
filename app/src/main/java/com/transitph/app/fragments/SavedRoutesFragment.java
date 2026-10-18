@@ -19,6 +19,8 @@ import com.transitph.app.adapters.SavedRouteAdapter;
 import com.transitph.app.database.SavedRouteDao;
 import com.transitph.app.models.SavedRoute;
 import com.transitph.app.utils.SessionManager;
+import com.transitph.app.utils.RouteTransportFilter;
+import com.google.android.material.chip.ChipGroup;
 import java.util.List;
 
 public class SavedRoutesFragment extends Fragment implements SavedRouteAdapter.OnSavedRouteClickListener {
@@ -26,10 +28,15 @@ public class SavedRoutesFragment extends Fragment implements SavedRouteAdapter.O
     private RecyclerView rvSavedRoutes;
     private View layoutEmptyState;
     private TextView tvSavedCount;
+    private TextView tvSavedEmptyTitle;
+    private TextView tvSavedEmptyDescription;
+    private ChipGroup transportFilters;
 
     private SavedRouteDao savedRouteDao;
     private SessionManager sessionManager;
     private SavedRouteAdapter adapter;
+    private List<SavedRoute> allSavedRoutes = new java.util.ArrayList<>();
+    private String selectedTransport = RouteTransportFilter.ALL;
 
     @Nullable
     @Override
@@ -55,31 +62,48 @@ public class SavedRoutesFragment extends Fragment implements SavedRouteAdapter.O
         rvSavedRoutes = view.findViewById(R.id.rv_saved_routes);
         layoutEmptyState = view.findViewById(R.id.layout_saved_empty);
         tvSavedCount = view.findViewById(R.id.tv_saved_routes_count);
+        tvSavedEmptyTitle = view.findViewById(R.id.tv_saved_empty_title);
+        tvSavedEmptyDescription = view.findViewById(R.id.tv_saved_empty_description);
+        transportFilters = view.findViewById(R.id.chips_saved_transport_filters);
 
         rvSavedRoutes.setLayoutManager(new LinearLayoutManager(requireContext()));
         adapter = new SavedRouteAdapter(null, this);
         rvSavedRoutes.setAdapter(adapter);
+        RouteTransportFilter.setup(requireContext(), transportFilters, filter -> {
+            selectedTransport = filter;
+            applySavedRouteFilter();
+        });
     }
 
     private void loadSavedRoutes() {
         long userId = sessionManager.getUserId();
         if (userId <= 0) {
-            rvSavedRoutes.setVisibility(View.GONE);
-            layoutEmptyState.setVisibility(View.VISIBLE);
-            tvSavedCount.setText("0 saved routes");
+            allSavedRoutes = new java.util.ArrayList<>();
+            applySavedRouteFilter();
             return;
         }
 
-        List<SavedRoute> list = savedRouteDao.getSavedRoutesForUser(userId);
-        tvSavedCount.setText(list.size() + " route" + (list.size() == 1 ? "" : "s") + " saved for offline access");
+        allSavedRoutes = savedRouteDao.getSavedRoutesForUser(userId);
+        applySavedRouteFilter();
+    }
 
-        if (list.isEmpty()) {
+    private void applySavedRouteFilter() {
+        List<SavedRoute> filtered = RouteTransportFilter.filterSavedRoutes(allSavedRoutes, selectedTransport);
+        tvSavedCount.setText(filtered.size() + " of " + allSavedRoutes.size() + " saved route" + (allSavedRoutes.size() == 1 ? "" : "s") + " shown");
+        if (filtered.isEmpty()) {
             rvSavedRoutes.setVisibility(View.GONE);
             layoutEmptyState.setVisibility(View.VISIBLE);
+            if (allSavedRoutes.isEmpty()) {
+                tvSavedEmptyTitle.setText("No saved routes yet");
+                tvSavedEmptyDescription.setText("Search for routes in the Route Finder or explore Terminals, then tap SAVE to pin them here.");
+            } else {
+                tvSavedEmptyTitle.setText("No " + selectedTransport + " routes saved");
+                tvSavedEmptyDescription.setText("Choose All or save a " + selectedTransport + " route to see it here.");
+            }
         } else {
             rvSavedRoutes.setVisibility(View.VISIBLE);
             layoutEmptyState.setVisibility(View.GONE);
-            adapter.setSavedRoutes(list);
+            adapter.setSavedRoutes(filtered);
         }
     }
 

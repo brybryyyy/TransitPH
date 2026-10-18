@@ -8,6 +8,7 @@ import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.transitph.app.R;
+import com.transitph.app.database.DatabaseHelper;
 import com.transitph.app.fragments.AssistedNavigationFragment;
 import com.transitph.app.fragments.HomeFragment;
 import com.transitph.app.supabase.SupabaseSync;
@@ -24,6 +25,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        // Restore original bundled routes idempotently, preserving existing terminal coordinates.
+        DatabaseHelper.getInstance(this).restoreBundledTransitData();
 
         bottomNav = findViewById(R.id.bottom_navigation);
         setupBottomNav();
