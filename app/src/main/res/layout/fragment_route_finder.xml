@@ -1,205 +1,233 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background">
 
-    <!-- Search Header Card -->
-    <androidx.cardview.widget.CardView
-        android:id="@+id/card_rf_search"
+    <!-- The header collapses as the virtualized route list scrolls, keeping the whole page fluid. -->
+    <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:cardElevation="4dp"
-        app:cardBackgroundColor="@color/surface"
-        app:layout_constraintTop_toTopOf="parent">
+        android:background="@color/background"
+        app:elevation="0dp">
 
-        <LinearLayout
+      <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_scrollFlags="scroll|enterAlways|snap">
+
+        <!-- Search Header Card -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/card_rf_search"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="@color/surface">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Route Finder"
-                android:textColor="@color/text_primary"
-                android:textSize="20sp"
-                android:textStyle="bold" />
-
-            <!-- From Field -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
+                android:orientation="vertical"
+                android:padding="16dp">
 
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Route Finder"
+                    android:textColor="@color/text_primary"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <!-- From Field -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <EditText
+                        android:id="@+id/et_rf_from"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:background="@android:drawable/editbox_background_normal"
+                        android:hint="From (e.g. Calamba)"
+                        android:inputType="textCapWords"
+                        android:paddingHorizontal="12dp"
+                        android:textSize="14sp" />
+
+                    <ImageButton
+                        android:id="@+id/btn_rf_swap"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:layout_marginStart="4dp"
+                        android:background="?android:attr/selectableItemBackgroundBorderless"
+                        android:src="@android:drawable/ic_menu_sort_by_size"
+                        app:tint="@color/primary" />
+                </LinearLayout>
+
+                <!-- To Field -->
                 <EditText
-                    android:id="@+id/et_rf_from"
-                    android:layout_width="0dp"
+                    android:id="@+id/et_rf_to"
+                    android:layout_width="match_parent"
                     android:layout_height="48dp"
-                    android:layout_weight="1"
+                    android:layout_marginTop="6dp"
                     android:background="@android:drawable/editbox_background_normal"
-                    android:hint="From (e.g. Calamba)"
+                    android:hint="To (e.g. Santa Rosa)"
                     android:inputType="textCapWords"
                     android:paddingHorizontal="12dp"
                     android:textSize="14sp" />
 
-                <ImageButton
-                    android:id="@+id/btn_rf_swap"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_marginStart="4dp"
-                    android:background="?android:attr/selectableItemBackgroundBorderless"
-                    android:src="@android:drawable/ic_menu_sort_by_size"
-                    app:tint="@color/primary" />
-            </LinearLayout>
-
-            <!-- To Field -->
-            <EditText
-                android:id="@+id/et_rf_to"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_marginTop="6dp"
-                android:background="@android:drawable/editbox_background_normal"
-                android:hint="To (e.g. Santa Rosa)"
-                android:inputType="textCapWords"
-                android:paddingHorizontal="12dp"
-                android:textSize="14sp" />
-
-            <!-- Quick Location Chips -->
-            <HorizontalScrollView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:scrollbars="none">
-
-                <LinearLayout
-                    android:layout_width="wrap_content"
+                <!-- Quick Location Chips -->
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal">
+                    android:layout_marginTop="8dp"
+                    android:scrollbars="none">
 
-                    <Button
-                        android:id="@+id/chip_loc_calamba"
-                        style="?android:attr/borderlessButtonStyle"
+                    <LinearLayout
                         android:layout_width="wrap_content"
-                        android:layout_height="36dp"
-                        android:layout_marginEnd="6dp"
-                        android:backgroundTint="@color/primary_light"
-                        android:text="Calamba"
-                        android:textColor="@color/primary"
-                        android:textSize="11sp" />
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
 
-                    <Button
-                        android:id="@+id/chip_loc_santarosa"
-                        style="?android:attr/borderlessButtonStyle"
-                        android:layout_width="wrap_content"
-                        android:layout_height="36dp"
-                        android:layout_marginEnd="6dp"
-                        android:backgroundTint="@color/primary_light"
-                        android:text="Santa Rosa"
-                        android:textColor="@color/primary"
-                        android:textSize="11sp" />
+                        <Button
+                            android:id="@+id/chip_loc_calamba"
+                            style="?android:attr/borderlessButtonStyle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="36dp"
+                            android:layout_marginEnd="6dp"
+                            android:backgroundTint="@color/primary_light"
+                            android:text="Calamba"
+                            android:textColor="@color/primary"
+                            android:textSize="11sp" />
 
-                    <Button
-                        android:id="@+id/chip_loc_dasma"
-                        style="?android:attr/borderlessButtonStyle"
-                        android:layout_width="wrap_content"
-                        android:layout_height="36dp"
-                        android:layout_marginEnd="6dp"
-                        android:backgroundTint="@color/primary_light"
-                        android:text="Dasmariñas"
-                        android:textColor="@color/primary"
-                        android:textSize="11sp" />
+                        <Button
+                            android:id="@+id/chip_loc_santarosa"
+                            style="?android:attr/borderlessButtonStyle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="36dp"
+                            android:layout_marginEnd="6dp"
+                            android:backgroundTint="@color/primary_light"
+                            android:text="Santa Rosa"
+                            android:textColor="@color/primary"
+                            android:textSize="11sp" />
 
-                    <Button
-                        android:id="@+id/chip_loc_tagaytay"
-                        style="?android:attr/borderlessButtonStyle"
-                        android:layout_width="wrap_content"
-                        android:layout_height="36dp"
-                        android:backgroundTint="@color/primary_light"
-                        android:text="Tagaytay"
-                        android:textColor="@color/primary"
-                        android:textSize="11sp" />
-                </LinearLayout>
-            </HorizontalScrollView>
+                        <Button
+                            android:id="@+id/chip_loc_dasma"
+                            style="?android:attr/borderlessButtonStyle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="36dp"
+                            android:layout_marginEnd="6dp"
+                            android:backgroundTint="@color/primary_light"
+                            android:text="Dasmariñas"
+                            android:textColor="@color/primary"
+                            android:textSize="11sp" />
 
-            <!-- Search Button -->
-            <Button
-                android:id="@+id/btn_rf_find"
-                android:layout_width="match_parent"
-                android:layout_height="50dp"
-                android:layout_marginTop="12dp"
-                android:backgroundTint="@color/primary"
-                android:text="FIND TRANSIT ROUTE"
-                android:textColor="@color/surface"
-                android:textSize="15sp"
-                android:textStyle="bold" />
+                        <Button
+                            android:id="@+id/chip_loc_tagaytay"
+                            style="?android:attr/borderlessButtonStyle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="36dp"
+                            android:backgroundTint="@color/primary_light"
+                            android:text="Tagaytay"
+                            android:textColor="@color/primary"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+                </HorizontalScrollView>
 
-        </LinearLayout>
-    </androidx.cardview.widget.CardView>
+                <!-- Search Button -->
+                <Button
+                    android:id="@+id/btn_rf_find"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:layout_marginTop="12dp"
+                    android:backgroundTint="@color/primary"
+                    android:text="FIND TRANSIT ROUTE"
+                    android:textColor="@color/surface"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
 
-    <!-- Map Container -->
-    <androidx.cardview.widget.CardView
-        android:id="@+id/card_rf_map"
-        android:layout_width="match_parent"
-        android:layout_height="200dp"
-        android:layout_margin="12dp"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="2dp"
-        app:layout_constraintTop_toBottomOf="@id/card_rf_search">
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
 
-        <org.osmdroid.views.MapView
-            android:id="@+id/map_rf"
+        <!-- Map Container -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/card_rf_map"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
-    </androidx.cardview.widget.CardView>
+            android:layout_height="200dp"
+            android:layout_margin="12dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp">
 
-    <!-- Popular / Catalog Routes Header & List -->
-    <TextView
-        android:id="@+id/tv_rf_list_header"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="12dp"
-        android:text="ALL TRANSIT ROUTES (CALABARZON)"
-        android:textColor="@color/text_primary"
-        android:textSize="13sp"
-        android:textStyle="bold"
-        app:layout_constraintTop_toBottomOf="@id/card_rf_map"
-        app:layout_constraintStart_toStartOf="parent" />
+            <org.osmdroid.views.MapView
+                android:id="@+id/map_rf"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+        </androidx.cardview.widget.CardView>
 
-    <HorizontalScrollView
-        android:id="@+id/scroll_rf_transport_filters"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:scrollbars="none"
-        app:layout_constraintTop_toBottomOf="@id/tv_rf_list_header">
-
-        <com.google.android.material.chip.ChipGroup
-            android:id="@+id/chips_rf_transport_filters"
+        <!-- Popular / Catalog Routes Header & List -->
+        <TextView
+            android:id="@+id/tv_rf_list_header"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            android:paddingBottom="2dp"
-            app:chipSpacingHorizontal="4dp"
-            app:singleLine="true"
-            app:singleSelection="true"
-            app:selectionRequired="true" />
-    </HorizontalScrollView>
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="4dp"
+            android:text="ALL TRANSIT ROUTES (CALABARZON)"
+            android:textColor="@color/text_primary"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="none">
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chips_rf_fare_option"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_marginTop="4dp"
+                android:paddingBottom="2dp"
+                app:chipSpacingHorizontal="4dp"
+                app:singleLine="true"
+                app:singleSelection="true"
+                app:selectionRequired="true" />
+        </HorizontalScrollView>
+
+        <HorizontalScrollView
+            android:id="@+id/scroll_rf_transport_filters"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:scrollbars="none">
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chips_rf_transport_filters"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="2dp"
+                app:chipSpacingHorizontal="4dp"
+                app:singleLine="true"
+                app:singleSelection="true"
+                app:selectionRequired="true" />
+        </HorizontalScrollView>
+
+      </LinearLayout>
+    </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_rf_popular_routes"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
+        android:layout_height="match_parent"
         android:layout_marginTop="4dp"
         android:padding="12dp"
         android:clipToPadding="false"
-        app:layout_constraintTop_toBottomOf="@id/scroll_rf_transport_filters"
-        app:layout_constraintBottom_toBottomOf="parent" />
+        app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

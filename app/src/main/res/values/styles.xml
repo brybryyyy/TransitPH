@@ -1,13 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Base Application Theme -->
-    <style name="Theme.TransitPH" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <style name="Theme.TransitPH" parent="Theme.MaterialComponents.Light.NoActionBar">
         <item name="colorPrimary">@color/primary</item>
         <item name="colorPrimaryVariant">@color/primary_dark</item>
         <item name="colorOnPrimary">@color/surface</item>
         <item name="colorSecondary">@color/accent</item>
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <item name="android:textColorHint">@color/text_muted</item>
+        <item name="android:editTextStyle">@style/TransitPH.EditText</item>
         <item name="android:statusBarColor">@color/primary_dark</item>
         <item name="android:windowBackground">@color/background</item>
+    </style>
+
+    <!-- Keep text legible in fields, including screens that use the platform's default EditText style. -->
+    <style name="TransitPH.EditText" parent="Widget.AppCompat.EditText">
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textColorHint">@color/text_muted</item>
     </style>
 
     <style name="Theme.TransitPH.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />

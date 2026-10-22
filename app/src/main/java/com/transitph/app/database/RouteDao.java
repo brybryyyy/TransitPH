@@ -17,10 +17,16 @@ public class RouteDao {
     }
 
     public List<Route> getAllRoutes() {
-        return searchRoutes("", "");
+        // Catalog cards need route fields only. Loading stop rows one by one here was
+        // blocking the Routes tab while every route (including all imported routes) loaded.
+        return searchRoutes("", "", false);
     }
 
     public List<Route> searchRoutes(String from, String to) {
+        return searchRoutes(from, to, true);
+    }
+
+    private List<Route> searchRoutes(String from, String to, boolean includeStops) {
         List<Route> routes = new ArrayList<>();
         SQLiteDatabase db = dbHelper.getReadableDatabase();
 
@@ -73,7 +79,7 @@ public class RouteDao {
         if (cursor != null && cursor.moveToFirst()) {
             do {
                 Route r = cursorToRoute(cursor);
-                r.setStops(getStopsForRoute(r.getId()));
+                if (includeStops) r.setStops(getStopsForRoute(r.getId()));
                 routes.add(r);
             } while (cursor.moveToNext());
             cursor.close();

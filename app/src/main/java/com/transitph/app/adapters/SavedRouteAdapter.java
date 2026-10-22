@@ -9,6 +9,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.transitph.app.R;
 import com.transitph.app.models.SavedRoute;
+import com.transitph.app.utils.RouteFarePreference;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -73,7 +74,7 @@ public class SavedRouteAdapter extends RecyclerView.Adapter<SavedRouteAdapter.Sa
         public void bind(SavedRoute sr, OnSavedRouteClickListener listener) {
             tvRouteName.setText(sr.getRouteName());
             tvFromTo.setText(sr.getOrigin() + " → " + sr.getDestination());
-            tvFare.setText(sr.getFormattedFare());
+            tvFare.setText(RouteFarePreference.formatFare(itemView.getContext(), sr));
             tvTravelTime.setText(sr.getEstimatedTravelTime() + " min");
             tvTerminal.setText("📍 " + (sr.getTerminalName() != null ? sr.getTerminalName() : "Terminal"));
 

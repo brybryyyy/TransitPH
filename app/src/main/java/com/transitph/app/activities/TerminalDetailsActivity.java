@@ -16,6 +16,7 @@ import com.transitph.app.database.RouteDao;
 import com.transitph.app.database.SavedRouteDao;
 import com.transitph.app.database.TerminalDao;
 import com.transitph.app.models.Route;
+import com.transitph.app.utils.RouteFarePreference;
 import com.transitph.app.models.Terminal;
 import com.transitph.app.utils.SessionManager;
 import com.transitph.app.utils.RouteTransportFilter;
@@ -150,7 +151,7 @@ public class TerminalDetailsActivity extends AppCompatActivity implements RouteA
         tvTransportBadge.setText(route.getTransportIconText());
         tvRouteTitle.setText(route.getOrigin() + " → " + route.getDestination());
         tvTerminalName.setText(route.getTerminalName() != null ? "📍 " + route.getTerminalName() : "📍 Terminal");
-        tvFare.setText(route.getFormattedFare());
+        tvFare.setText(RouteFarePreference.formatFare(itemView.getContext(), route));
         tvTravelTime.setText(route.getFormattedTime());
         tvTransfers.setText(route.getTransferCount() + " transfer");
         tvWalking.setText("🚶 " + route.getWalkingDistanceMeters() + "m walking");

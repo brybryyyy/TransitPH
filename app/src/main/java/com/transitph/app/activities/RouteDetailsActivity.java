@@ -23,6 +23,7 @@ import com.transitph.app.models.RouteStop;
 import com.transitph.app.services.RouteSearchService;
 import com.transitph.app.services.RouteSearchService.TimelineStep;
 import com.transitph.app.utils.SessionManager;
+import com.transitph.app.utils.RouteFarePreference;
 import java.util.List;
 
 public class RouteDetailsActivity extends AppCompatActivity {
@@ -110,7 +111,7 @@ public class RouteDetailsActivity extends AppCompatActivity {
 
         rvTimeline.setLayoutManager(new LinearLayoutManager(this));
         selectedLanguage = "fil".equalsIgnoreCase(sessionManager.getSelectedLanguage()) ? "fil" : "en";
-        timelineSteps = RouteSearchService.generateTimelineSteps(route);
+        timelineSteps = RouteSearchService.generateTimelineSteps(this, route);
         timelineAdapter = new TimelineAdapter(timelineSteps, selectedLanguage);
         rvTimeline.setAdapter(timelineAdapter);
 
@@ -160,7 +161,7 @@ public class RouteDetailsActivity extends AppCompatActivity {
         tvTransportType.setText(route.getTransportIconText());
         tvFromTo.setText(route.getOrigin() + " ➔ " + route.getDestination());
         tvTerminal.setText("📍 " + (route.getTerminalName() != null ? route.getTerminalName() : "Local Terminal"));
-        tvFare.setText(route.getFormattedFare());
+        tvFare.setText(RouteFarePreference.formatFare(this, route));
         tvTravelTime.setText("⏱ " + route.getFormattedTime());
         tvDescription.setText(route.getDescription() != null ? route.getDescription() : "Standard commute route in CALABARZON.");
 

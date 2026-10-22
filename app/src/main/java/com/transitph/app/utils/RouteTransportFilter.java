@@ -20,7 +20,7 @@ import java.util.Locale;
 /** Shared transport filters for every route list in the app. */
 public final class RouteTransportFilter {
     public static final String ALL = "All";
-    private static final String[] FILTERS = {ALL, "Jeepney", "UV Express", "Bus"};
+    private static final String[] FILTERS = {ALL, "Jeepney", "Bus"};
 
     private RouteTransportFilter() { }
 
@@ -89,10 +89,6 @@ public final class RouteTransportFilter {
         switch (filter.toLowerCase(Locale.ROOT)) {
             case "jeepney":
                 return type.contains("jeep");
-            case "uv express":
-                // In TransitPH, "Van" and "UV Express" describe the same filter category.
-                return type.contains("uv") || type.contains("van") ||
-                        name.matches(".*\\b(uv express|van)\\b.*");
             case "bus":
                 return type.contains("bus");
             default:

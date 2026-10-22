@@ -9,6 +9,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.transitph.app.R;
 import com.transitph.app.models.Route;
+import com.transitph.app.utils.RouteFarePreference;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -78,7 +79,7 @@ public class RouteAdapter extends RecyclerView.Adapter<RouteAdapter.RouteViewHol
             tvTransportBadge.setText(route.getTransportIconText());
             tvRouteTitle.setText(route.getOrigin() + " → " + route.getDestination());
             tvTerminalName.setText(route.getTerminalName() != null ? "📍 " + route.getTerminalName() : "📍 Terminal");
-            tvFare.setText(route.getFormattedFare());
+            tvFare.setText(RouteFarePreference.formatFare(itemView.getContext(), route));
             tvTravelTime.setText(route.getFormattedTime());
             tvTransfers.setText(route.getTransferCount() + " transfer");
             tvWalking.setText("🚶 " + route.getWalkingDistanceMeters() + "m walking");

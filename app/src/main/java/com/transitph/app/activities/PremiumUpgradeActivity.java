@@ -133,7 +133,7 @@ public class PremiumUpgradeActivity extends AppCompatActivity {
             int remaining = SearchQuotaManager.remaining(this, sessionManager);
             tvCurrentTier.setText("Free plan — " + remaining + "/5 searches remaining today.");
             if (btnSubscribe != null) {
-                btnSubscribe.setText("Continue to PayMongo checkout · ₱49");
+                btnSubscribe.setText("Continue to PayMongo checkout · ₱89");
                 btnSubscribe.setEnabled(true);
             }
         }

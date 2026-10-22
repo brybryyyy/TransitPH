@@ -5,7 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
-const PREMIUM_PRICE_MINOR = 4900;
+const PREMIUM_PRICE_MINOR = 8900;
 const PREMIUM_PLAN = "PREMIUM_MONTHLY";
 
 Deno.serve(async (request) => {

@@ -8,6 +8,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.transitph.app.supabase.SupabaseClient;
+import com.transitph.app.utils.RouteFarePreference;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -66,7 +67,7 @@ public class RouteSearchService {
         return routeDao.searchRoutes(origin, destination);
     }
 
-    public static List<TimelineStep> generateTimelineSteps(Route route) {
+    public static List<TimelineStep> generateTimelineSteps(Context context, Route route) {
         List<TimelineStep> fromServer = parseServerTimeline(route.getTimelineJson());
         if (!fromServer.isEmpty()) return fromServer;
 
@@ -87,15 +88,16 @@ public class RouteSearchService {
 
         // Step 2: Board transport
         String iconType = isBus ? "RIDE_BUS" : "RIDE_JEEP";
-        String rideEn = "Board the " + transport + " marked '" + route.getRouteName() + "'. Hand " + route.getFormattedFare() + " fare to the driver/conductor upon seating.";
-        String rideFil = "Sumakay sa " + transport + " na may karatulang '" + route.getRouteName() + "'. Iabot ang pamasaheng " + route.getFormattedFare() + " sa drayber o konduktor.";
+        String fare = RouteFarePreference.formatFare(context, route);
+        String rideEn = "Board the " + transport + " marked '" + route.getRouteName() + "'. Hand " + fare + " fare to the driver/conductor upon seating.";
+        String rideFil = "Sumakay sa " + transport + " na may karatulang '" + route.getRouteName() + "'. Iabot ang pamasaheng " + fare + " sa drayber o konduktor.";
         steps.add(new TimelineStep(
                 "2",
                 iconType,
                 "Ride " + transport + " (" + route.getRouteName() + ")",
                 rideEn,
                 rideFil,
-                route.getEstimatedTravelTime() + " mins • " + route.getFormattedFare()
+                route.getEstimatedTravelTime() + " mins • " + fare
         ));
 
         // Step 3: Transit intermediate stops if available

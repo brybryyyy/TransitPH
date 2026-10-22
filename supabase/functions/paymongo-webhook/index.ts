@@ -43,7 +43,7 @@ Deno.serve(async (request) => {
   const lineItems = Array.isArray(attributes.line_items) ? attributes.line_items : [];
   const lineTotal = lineItems.reduce((sum: number, line: any) =>
     sum + Number(line?.amount ?? 0) * Number(line?.quantity ?? 0), 0);
-  if (paidAmount !== 4900 || currency !== "PHP" || lineTotal !== 4900) {
+  if (paidAmount !== 8900 || currency !== "PHP" || lineTotal !== 8900) {
     console.error("Paid checkout does not match TransitPH Premium price", referenceNumber);
     return json({ error: "Paid amount did not match the plan" }, 400);
   }
@@ -61,7 +61,7 @@ Deno.serve(async (request) => {
     .maybeSingle();
   if (orderError || !order) return json({ error: "Payment order was not found" }, 404);
   if (order.status === "paid") return json({ received: true, alreadyProcessed: true }, 200);
-  if (order.checkout_session_id !== sessionId || order.amount_minor !== 4900 || order.currency !== "PHP") {
+  if (order.checkout_session_id !== sessionId || order.amount_minor !== 8900 || order.currency !== "PHP") {
     return json({ error: "Checkout session does not match the pending order" }, 400);
   }
 

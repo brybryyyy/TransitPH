@@ -26,6 +26,7 @@ import com.transitph.app.models.Route;
 import com.transitph.app.models.Terminal;
 import com.transitph.app.utils.SessionManager;
 import com.transitph.app.utils.RouteTransportFilter;
+import com.transitph.app.utils.RouteFarePreference;
 import com.google.android.material.chip.ChipGroup;
 import org.osmdroid.config.Configuration;
 import com.transitph.app.map.TerminalMarkers;
@@ -45,6 +46,7 @@ public class RouteFinderFragment extends Fragment implements RouteAdapter.OnRout
     private RecyclerView rvPopularRoutes;
     private TextView tvRouteListHeader;
     private ChipGroup transportFilters;
+    private ChipGroup fareOptionFilters;
 
     // Quick chips
     private Button chipCalamba;
@@ -87,6 +89,7 @@ public class RouteFinderFragment extends Fragment implements RouteAdapter.OnRout
         rvPopularRoutes = view.findViewById(R.id.rv_rf_popular_routes);
         tvRouteListHeader = view.findViewById(R.id.tv_rf_list_header);
         transportFilters = view.findViewById(R.id.chips_rf_transport_filters);
+        fareOptionFilters = view.findViewById(R.id.chips_rf_fare_option);
 
         chipCalamba = view.findViewById(R.id.chip_loc_calamba);
         chipSantaRosa = view.findViewById(R.id.chip_loc_santarosa);
@@ -99,6 +102,9 @@ public class RouteFinderFragment extends Fragment implements RouteAdapter.OnRout
         RouteTransportFilter.setup(requireContext(), transportFilters, filter -> {
             selectedTransport = filter;
             applyFeaturedRouteFilter();
+        });
+        RouteFarePreference.setup(requireContext(), fareOptionFilters, discounted -> {
+            if (adapter != null) adapter.notifyDataSetChanged();
         });
 
         // Initialize Map
@@ -162,7 +168,9 @@ public class RouteFinderFragment extends Fragment implements RouteAdapter.OnRout
     @Override
     public void onRouteClick(Route route) {
         Intent intent = new Intent(requireContext(), RouteDetailsActivity.class);
-        intent.putExtra(RouteDetailsActivity.EXTRA_ROUTE, route);
+        // Catalog routes are loaded without stop rows for a responsive list. Load full route
+        // details (including stops) only after the rider opens the selected route.
+        intent.putExtra(RouteDetailsActivity.EXTRA_ROUTE_ID, route.getId());
         startActivity(intent);
     }
 
@@ -190,6 +198,12 @@ public class RouteFinderFragment extends Fragment implements RouteAdapter.OnRout
     @Override
     public void onResume() {
         super.onResume();
+        if (adapter != null) adapter.notifyDataSetChanged();
+        if (fareOptionFilters != null) {
+            RouteFarePreference.setup(requireContext(), fareOptionFilters, discounted -> {
+                if (adapter != null) adapter.notifyDataSetChanged();
+            });
+        }
         if (map != null) map.onResume();
     }
 

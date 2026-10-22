@@ -58,26 +58,25 @@ public final class TerminalMarkers {
         // Broad CALABARZON bounds reject corrupt coordinates while allowing its outer islands.
         if (latitude < 12.0 || latitude > 15.6 || longitude < 119.5 || longitude > 123.2) return false;
 
-        // The imported master CSV stores route-description text in the description column.
-        // Its coordinates are generated grid points, not surveyed terminal locations, and some
-        // fall offshore. Keep those records and their coordinates in the database, but don't map
-        // them as real terminal pins.
-        String description = terminal.getDescription();
-        String city = terminal.getCity();
-        if (description != null && city != null && !city.trim().isEmpty()) {
-            String lowerDescription = description.toLowerCase(java.util.Locale.ROOT);
-            int routeLabelEnd = lowerDescription.indexOf(" - ");
-            if (description.contains(";") && routeLabelEnd > 0) {
-                String csvRouteCity = lowerDescription.substring(0, routeLabelEnd).trim();
-                if (normalizePlace(csvRouteCity).equals(normalizePlace(city))) return false;
-            }
-        }
+        // The imported master CSV uses template descriptions for generated grid coordinates.
+        // Some island/coastal templates do not have the "City - ..." prefix used by the older
+        // check, so their synthetic coordinates were slipping through and appearing offshore.
+        // Keep every terminal/route in storage; only omit these unverified map pins.
+        if (hasGeneratedPlaceholderDescription(terminal.getDescription())) return false;
         return latitude != 0.0 && longitude != 0.0;
     }
 
-    private static String normalizePlace(String place) {
-        String normalized = place.trim().toLowerCase(java.util.Locale.ROOT);
-        if (normalized.endsWith(" city")) normalized = normalized.substring(0, normalized.length() - 5).trim();
-        return normalized;
+    private static boolean hasGeneratedPlaceholderDescription(String description) {
+        if (description == null || description.trim().isEmpty()) return false;
+        String text = description.toLowerCase(java.util.Locale.ROOT);
+        return text.contains("regional hub")
+                || text.contains("neighboring town")
+                || text.contains("highway junction")
+                || text.contains("provincial boundary")
+                || text.contains("feeder barangays")
+                || text.contains("terminal hub")
+                || text.contains("inter-lgu")
+                || text.contains("coastal endpoint")
+                || text.contains("island feeder");
     }
 }

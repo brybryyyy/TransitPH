@@ -34,6 +34,7 @@ import com.transitph.app.models.RouteStop;
 import com.transitph.app.models.Terminal;
 import com.transitph.app.utils.SessionManager;
 import com.transitph.app.utils.RouteTransportFilter;
+import com.transitph.app.utils.RouteFarePreference;
 import com.google.android.material.chip.ChipGroup;
 
 import org.osmdroid.config.Configuration;
@@ -62,6 +63,7 @@ public class RouteResultsActivity extends AppCompatActivity implements RouteAdap
     private View layoutEmptyState;
     private ImageButton btnBack;
     private ChipGroup transportFilters;
+    private ChipGroup fareOptionFilters;
 
     private RouteDao routeDao;
     private SavedRouteDao savedRouteDao;
@@ -118,6 +120,7 @@ public class RouteResultsActivity extends AppCompatActivity implements RouteAdap
         tvEmptyRouteDescription = findViewById(R.id.tv_empty_route_description);
         rvRouteResults = findViewById(R.id.rv_route_results);
         transportFilters = findViewById(R.id.chips_results_transport_filters);
+        fareOptionFilters = findViewById(R.id.chips_results_fare_option);
         layoutEmptyState = findViewById(R.id.layout_empty_state);
         btnBack = findViewById(R.id.btn_back_results);
 
@@ -133,6 +136,9 @@ public class RouteResultsActivity extends AppCompatActivity implements RouteAdap
         RouteTransportFilter.setup(this, transportFilters, filter -> {
             selectedTransport = filter;
             applyRouteFilter();
+        });
+        RouteFarePreference.setup(this, fareOptionFilters, discounted -> {
+            if (adapter != null) adapter.notifyDataSetChanged();
         });
 
         String summary = "";
@@ -290,6 +296,7 @@ public class RouteResultsActivity extends AppCompatActivity implements RouteAdap
     @Override
     protected void onResume() {
         super.onResume();
+        if (adapter != null) adapter.notifyDataSetChanged();
         if (map != null) map.onResume();
         if (searchBlockedByQuota && sessionManager != null && sessionManager.isPremiumActive()) {
             searchBlockedByQuota = false;
